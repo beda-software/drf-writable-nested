@@ -47,7 +47,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
     def _get_new_serializer(self, serializer, **kwargs):
         kwargs.update({
-            'context': self.context
+            'context': self.context,
+            'partial': self.partial,
         })
         return serializer.__class__(**kwargs)
 
