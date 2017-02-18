@@ -121,6 +121,9 @@ we should send the following data:
 {
     "username": "test",
     "profile": {
+        "access_key": {
+            "key": "key"
+        },
         "sites": [
             {
                 "url": "http://google.com"   
@@ -141,7 +144,7 @@ we should send the following data:
 }
 ```
 
-This package automatically will create all relations and we can see the output 
+This serializer automatically will create all relations and we can see the output 
 like the following example:
 ```json
 {
@@ -149,6 +152,10 @@ like the following example:
     "username": "test",
     "profile": {
         "pk": 1,
+        "access_key": {
+            "pk": 1,
+            "key": "key"
+        },
         "sites": [
             {
                 "pk": 1,

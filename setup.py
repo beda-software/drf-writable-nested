@@ -45,7 +45,7 @@ setup(
     packages=['drf_writable_nested'],
     zip_safe=False,
     classifiers=[
-        'Development Status :: Development Status :: 4 - Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Framework :: Django :: 1.8',
