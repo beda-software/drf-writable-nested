@@ -31,7 +31,7 @@ version = get_version('drf_writable_nested')
 
 
 setup(
-    name='drf_writable_nested',
+    name='drf-writable-nested',
     version=version,
     url='http://github.com/Brogency/drf-writable-nested',
     license='BSD',
