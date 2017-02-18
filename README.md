@@ -3,10 +3,6 @@ DRF Writable Nested
 
 This is a writable nested model serializer for Django REST Framework.
 
-
-
-
-
 Requirements
 ============
 
