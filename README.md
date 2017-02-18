@@ -1,5 +1,7 @@
 DRF Writable Nested
 ====================
+[![Build Status](https://travis-ci.org/Brogency/drf-writable-nested.svg?branch=master)](https://travis-ci.org/Brogency/drf-writable-nested)
+[![codecov](https://codecov.io/gh/Brogency/drf-writable-nested/branch/master/graph/badge.svg)](https://codecov.io/gh/Brogency/drf-writable-nested)
 
 This is a writable nested model serializer for Django REST Framework.
 
