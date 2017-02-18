@@ -39,7 +39,7 @@ class Profile(models.Model):
 
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='profile')
+    profile = models.ForeignKey(Profile, related_name='avatars')
 ```
 
 We should create the following list of serialzers:
@@ -54,12 +54,15 @@ class AvatarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Avatar
+        fields = ('pk', 'image',)
+
 
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
     class Meta:
         model = Site
+        fields = ('pk', 'url',)
 
 
 class ProfileSerializer(WritableNestedModelSerializer):
@@ -70,6 +73,7 @@ class ProfileSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Profile
+        fields = ('pk', 'sites', 'avatars',)
 
 
 class UserSerializer(WritableNestedModelSerializer):
@@ -78,6 +82,7 @@ class UserSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = User
+        fields = ('pk', 'profile', 'username',)
 ```
 
 Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` if you want 

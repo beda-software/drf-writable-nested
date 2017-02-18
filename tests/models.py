@@ -16,5 +16,5 @@ class Profile(models.Model):
 
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='profile')
+    profile = models.ForeignKey(Profile, related_name='avatars')
 

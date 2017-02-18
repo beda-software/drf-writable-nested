@@ -9,12 +9,15 @@ class AvatarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Avatar
+        fields = ('pk', 'image',)
+
 
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
     class Meta:
         model = Site
+        fields = ('pk', 'url',)
 
 
 class ProfileSerializer(WritableNestedModelSerializer):
@@ -25,6 +28,7 @@ class ProfileSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = Profile
+        fields = ('pk', 'sites', 'avatars',)
 
 
 class UserSerializer(WritableNestedModelSerializer):
@@ -33,3 +37,4 @@ class UserSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = User
+        fields = ('pk', 'profile', 'username',)

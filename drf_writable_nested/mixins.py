@@ -279,12 +279,19 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             if related_field.one_to_one:
                 related_data = [related_data]
 
-            current_ids = [d.get('pk') for d in related_data]
+            # M2M relation can be as direct as reverse. For direct relation we
+            # should use reverse relation name
+            if related_field.many_to_many and \
+                    not isinstance(related_field, ForeignObjectRel):
+                related_field_name =  related_field.rel.name
+            else:
+                related_field_name = related_field.name
 
+            current_ids = [d.get('pk') for d in related_data]
             try:
                 pks_to_delete = list(
                     model_class.objects.filter(
-                        **{related_field.name: instance}
+                        **{related_field_name: instance}
                     ).exclude(
                         pk__in=current_ids
                     ).values_list('pk', flat=True)
