@@ -49,15 +49,15 @@ class Site(models.Model):
 We should create the following list of serialzers:
 
 ```python
-import serialziers from rest_framework
-import WriteableNestedModelSerializer from drf_writeable_nested
+from rest_framework import serializers
+from drf_writeable_nested import WriteableNestedModelSerializer
 
 
-class AvatarSerializer(serialziers.ModelSerializer):
-    image = serialziers.CharField()
-    
+class AvatarSerializer(serializers.ModelSerializer):
+    image = serializers.CharField()
 
-class SiteSerializer(serializer.ModelSerializer):
+
+class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
 
@@ -65,7 +65,7 @@ class ProfileSerializer(WriteableNestedModelSerializer):
     # Direct ManyToMany relation
     sites = SiteSerializer(many=True)
     # Reverse FK relation
-    avatars = ProfileSerializer(many=True)
+    avatars = AvatarSerializer(many=True)
 
 
 class UserSerializer(WriteableNestedModelSerializer):
@@ -137,4 +137,4 @@ like the following example:
 
 Authors
 =======
-Vadim Laletin at Bro.engineering
+Bro.engineering
