@@ -1,7 +1,7 @@
 from django.db import models
 from rest_framework import serializers, test
 
-from drf_writeable_nested import WriteableNestedModelSerializer
+from drf_writable_nested import WritableNestedModelSerializer
 
 
 class User(models.Model):
@@ -31,14 +31,14 @@ class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
 
-class ProfileSerializer(WriteableNestedModelSerializer):
+class ProfileSerializer(WritableNestedModelSerializer):
     # Direct ManyToMany relation
     sites = SiteSerializer(many=True)
     # Reverse FK relation
     avatars = AvatarSerializer(many=True)
 
 
-class UserSerializer(WriteableNestedModelSerializer):
+class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer()
 

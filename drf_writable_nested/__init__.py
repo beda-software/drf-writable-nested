@@ -1,4 +1,4 @@
-__title__ = 'DRF writeable nested'
+__title__ = 'DRF writable nested'
 __version__ = '0.0.1'
 __author__ = 'Bro.engineering'
 __license__ = 'BSD 2-Clause'
@@ -9,4 +9,4 @@ VERSION = __version__
 
 
 from .mixins import NestedUpdateMixin, NestedCreateMixin, SavePriorityMixin
-from .serializers import WriteableNestedModelSerializer
+from .serializers import WritableNestedModelSerializer

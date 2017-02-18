@@ -14,24 +14,24 @@ def get_version(package):
     init_py = open(os.path.join(package, '__init__.py')).read()
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
-version = get_version('drf_writeable_nested')
+version = get_version('drf_writable_nested')
 
 with open('README.md', encoding='utf-8') as f:
       long_description = f.read()
 
 setup(
-    name='drf_writeable_nested',
+    name='drf_writable_nested',
     version=version,
-    url='http://github.com/Brogency/drf-writeable-nested',
+    url='http://github.com/Brogency/drf-writable-nested',
     license='BSD',
     description=(
-        'Writeable nested helpers for django-rest-framework\'s serializers'),
+        'Writable nested helpers for django-rest-framework\'s serializers'),
     long_description=long_description,
     keywords=('drf restframework rest_framework django_rest_framework'
-              ' serializers drf_writeable_nested'),
+              ' serializers drf_writable_nested'),
     author='Bro.engineering',
-    author_email='drfwriteablenested@bro.engineering',
-    packages=['drf_writeable_nested'],
+    author_email='drfwritablenested@bro.engineering',
+    packages=['drf_writable_nested'],
     zip_safe=False,
     classifiers=[
         'Development Status :: Development Status :: 4 - Beta',

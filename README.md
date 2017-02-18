@@ -1,7 +1,7 @@
-DRF Writeable Nested
+DRF Writable Nested
 ====================
 
-This is a writeable nested model serializer for Django REST Framework.
+This is a writable nested model serializer for Django REST Framework.
 
 
 
@@ -18,7 +18,7 @@ Installation
 ============
 
 ```
-pip install drf-writeable-nested
+pip install drf-writable-nested
 ```
 
 Usage
@@ -50,7 +50,7 @@ We should create the following list of serialzers:
 
 ```python
 from rest_framework import serializers
-from drf_writeable_nested import WriteableNestedModelSerializer
+from drf_writable_nested import WritableNestedModelSerializer
 
 
 class AvatarSerializer(serializers.ModelSerializer):
@@ -61,14 +61,14 @@ class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
 
-class ProfileSerializer(WriteableNestedModelSerializer):
+class ProfileSerializer(WritableNestedModelSerializer):
     # Direct ManyToMany relation
     sites = SiteSerializer(many=True)
     # Reverse FK relation
     avatars = AvatarSerializer(many=True)
 
 
-class UserSerializer(WriteableNestedModelSerializer):
+class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer()
 ```
