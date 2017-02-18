@@ -12,12 +12,6 @@ env:
     - DJANGO=1.9
     - DJANGO=1.10
 
-matrix:
-    fast_finish: true
-    include:
-      - python: "3.3"
-        env: DJANGO=1.8
-
 install:
     - pip install tox tox-travis
 

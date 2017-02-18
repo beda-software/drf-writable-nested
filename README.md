@@ -23,23 +23,23 @@ For example, for the following model structure:
 ```python
 from django.db import models
 
-    
+
+class Site(models.Model):
+    url = models.CharField(max_length=100)
+
+
 class User(models.Model):
-    username = models.CharField(max_length=100) 
-    
-    
+    username = models.CharField(max_length=100)
+
+
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
     user = models.OneToOneField(User)
-    
-   
+
+
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(Profile, related_name='profile')
-    
-
-class Site(models.Model):
-    url =  models.CharField(max_length=100)
 ```
 
 We should create the following list of serialzers:
@@ -52,9 +52,14 @@ from drf_writable_nested import WritableNestedModelSerializer
 class AvatarSerializer(serializers.ModelSerializer):
     image = serializers.CharField()
 
+    class Meta:
+        model = Avatar
 
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
+
+    class Meta:
+        model = Site
 
 
 class ProfileSerializer(WritableNestedModelSerializer):
@@ -63,10 +68,16 @@ class ProfileSerializer(WritableNestedModelSerializer):
     # Reverse FK relation
     avatars = AvatarSerializer(many=True)
 
+    class Meta:
+        model = Profile
+
 
 class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer()
+
+    class Meta:
+        model = User
 ```
 
 Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` if you want 
