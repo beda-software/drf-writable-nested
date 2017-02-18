@@ -30,13 +30,18 @@ class Site(models.Model):
 
 class User(models.Model):
     username = models.CharField(max_length=100)
-
+    
+    
+class AccessKey(models.Model):
+    key = models.CharField(max_length=100)
+    
 
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
     user = models.OneToOneField(User)
-
-
+    access_key = models.ForeignKey(AccessKey, null=True)
+    
+    
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(Profile, related_name='avatars')
@@ -65,15 +70,26 @@ class SiteSerializer(serializers.ModelSerializer):
         fields = ('pk', 'url',)
 
 
+class AccessKeySerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = AccessKey
+        fields = ('pk', 'key',)
+
+
 class ProfileSerializer(WritableNestedModelSerializer):
     # Direct ManyToMany relation
     sites = SiteSerializer(many=True)
+    
     # Reverse FK relation
     avatars = AvatarSerializer(many=True)
-
+    
+    # Direct FK relation
+    access_key = AccessKeySerializer(allow_null=True)
+    
     class Meta:
         model = Profile
-        fields = ('pk', 'sites', 'avatars',)
+        fields = ('pk', 'sites', 'avatars', 'access_key',)
 
 
 class UserSerializer(WritableNestedModelSerializer):
@@ -83,6 +99,14 @@ class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'profile', 'username',)
+        
+    # Optional callback - will be called after reverse relations will be saved 
+    def after_reverse_relations_saved(self, instance):
+        after_reverse_relations_saved_callback()
+    
+    # Optional callback - will be called after profile relation will be saved
+    def after_profile_saved(self):
+        after_profile_saved_callback()
 ```
 
 Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` if you want 

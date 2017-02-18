@@ -9,9 +9,14 @@ class User(models.Model):
     username = models.CharField(max_length=100)
 
 
+class AccessKey(models.Model):
+    key = models.CharField(max_length=100)
+
+
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
     user = models.OneToOneField(User)
+    access_key = models.ForeignKey(AccessKey, null=True)
 
 
 class Avatar(models.Model):

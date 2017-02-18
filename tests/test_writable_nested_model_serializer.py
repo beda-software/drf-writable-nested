@@ -1,6 +1,7 @@
+import mock
 from django.test import TestCase
 
-from .models import Site, Avatar, User, Profile
+from .models import Site, Avatar, User, Profile, AccessKey
 from .serializers import UserSerializer
 
 
@@ -9,6 +10,9 @@ class WritableNestedModelSerializerTest(TestCase):
         return {
             'username': 'test',
             'profile': {
+                'access_key': {
+                    'key': 'key',
+                },
                 'sites': [
                     {
                         'url': 'http://google.com',
@@ -38,6 +42,8 @@ class WritableNestedModelSerializerTest(TestCase):
 
         profile = user.profile
         self.assertIsNotNone(profile)
+        self.assertIsNotNone(profile.access_key)
+        self.assertEqual(profile.access_key.key, 'key')
         self.assertEqual(profile.sites.count(), 2)
         self.assertSetEqual(
             set(profile.sites.values_list('url', flat=True)),
@@ -54,6 +60,7 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Profile.objects.count(), 1)
         self.assertEqual(Site.objects.count(), 2)
         self.assertEqual(Avatar.objects.count(), 2)
+        self.assertEqual(AccessKey.objects.count(), 1)
 
     def test_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
@@ -77,6 +84,7 @@ class WritableNestedModelSerializerTest(TestCase):
                 'username': 'new',
                 'profile': {
                     'pk': profile_pk,
+                    'access_key': None,
                     'sites': [
                         {
                             'url': 'http://new-site.com',
@@ -107,6 +115,7 @@ class WritableNestedModelSerializerTest(TestCase):
 
         profile = user.profile
         self.assertIsNotNone(profile)
+        self.assertIsNone(profile.access_key)
         self.assertEqual(profile.pk, profile_pk)
         self.assertEqual(profile.sites.count(), 1)
         self.assertSetEqual(
@@ -124,6 +133,8 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Profile.objects.count(), 1)
         self.assertEqual(Site.objects.count(), 1)
         self.assertEqual(Avatar.objects.count(), 3)
+        # Access key shouldn't be removed because it is FK
+        self.assertEqual(AccessKey.objects.count(), 1)
 
     def test_partial_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
@@ -157,6 +168,8 @@ class WritableNestedModelSerializerTest(TestCase):
 
         profile = user.profile
         self.assertIsNotNone(profile)
+        self.assertIsNotNone(profile.access_key)
+        self.assertEqual(profile.access_key.key, 'key')
         self.assertEqual(profile.pk, profile_pk)
         self.assertEqual(profile.sites.count(), 2)
         self.assertSetEqual(
@@ -174,3 +187,25 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Profile.objects.count(), 1)
         self.assertEqual(Site.objects.count(), 2)
         self.assertEqual(Avatar.objects.count(), 2)
+        self.assertEqual(AccessKey.objects.count(), 1)
+
+    @mock.patch('tests.serializers.after_access_key_saved_callback')
+    @mock.patch('tests.serializers.after_avatars_saved_callback')
+    @mock.patch('tests.serializers.after_profile_saved_callback')
+    @mock.patch('tests.serializers.after_reverse_relations_saved_callback')
+    def test_save_hooks(self, after_reverse_relations_saved_callback_mock,
+                        after_profile_saved_callback_mock,
+                        after_avatars_saved_callback_mock,
+                        after_access_key_saved_callback_mock):
+        serializer = UserSerializer(data=self.get_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        self.assertTrue(
+            after_reverse_relations_saved_callback_mock.called_with(user))
+        self.assertTrue(
+            after_profile_saved_callback_mock.called_with(None))
+        self.assertTrue(
+            after_avatars_saved_callback_mock.called_with(user))
+        self.assertTrue(
+            after_access_key_saved_callback_mock.called_with(user))

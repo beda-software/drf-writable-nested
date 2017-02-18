@@ -51,7 +51,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         })
         return serializer.__class__(**kwargs)
 
-    def call_after_saved_callback(self, instance, field_name):
+    def call_after_saved_callback(self, field_name, instance=None):
         method = getattr(self, 'after_{}_saved'.format(field_name), None)
         if callable(method):
             method(instance)
@@ -80,15 +80,22 @@ class NestedCreateMixin(BaseNestedModelSerializer):
 
             if isinstance(field, serializers.ListSerializer) and \
                     isinstance(field.child, serializers.ModelSerializer):
-                if validated_data.pop(field.source, None) is None:
-                    # Skip field if field is not required or null allowed
+                if field.source not in validated_data or \
+                        validated_data.get(field.source) is None:
+                    # Skip field if field is not required or is null
                     continue
+
+                validated_data.pop(field.source)
+
                 reverse_relations[field_name] = (related_field, field.child)
 
             if isinstance(field, serializers.ModelSerializer):
-                if validated_data.pop(field.source, None) is None:
-                    # Skip field if field is not required or null allowed
+                if field.source not in validated_data or \
+                        validated_data.get(field.source) is None:
+                    # Skip field if field is not required or is null
                     continue
+
+                validated_data.pop(field.source)
 
                 # Reversed one-to-one looks like direct foreign keys but they
                 # are reverse relations
@@ -103,6 +110,7 @@ class NestedCreateMixin(BaseNestedModelSerializer):
                 field, data=self.initial_data[field_name])
             serializer.is_valid(raise_exception=True)
             validated_data[field.source] = serializer.save()
+            self.call_after_saved_callback(field_name)
 
         # Create instance
         instance = super(NestedCreateMixin, self).create(validated_data)
@@ -139,7 +147,7 @@ class NestedCreateMixin(BaseNestedModelSerializer):
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
 
-            self.call_after_saved_callback(instance, field_name)
+            self.call_after_saved_callback(field_name, instance)
         self.after_reverse_relations_saved(instance)
 
 
@@ -182,15 +190,22 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
 
             if isinstance(field, serializers.ListSerializer):
                 if isinstance(field.child, serializers.ModelSerializer):
-                    if validated_data.pop(field.source, None) is None:
-                        # Skip field if field is not required or null allowed
+                    if field.source not in validated_data or \
+                            validated_data.get(field.source) is None:
+                        # Skip field if field is not required or is null
                         continue
+
+                    validated_data.pop(field.source)
+
                     reverse_relations[field_name] = (related_field, field.child)
 
             if isinstance(field, serializers.ModelSerializer):
-                if validated_data.pop(field.source, None) is None:
-                    # Skip field if field is not required or null allowed
+                if field.source not in validated_data or \
+                        validated_data.get(field.source) is None:
+                    # Skip field if field is not required or is null
                     continue
+
+                validated_data.pop(field.source)
 
                 # Reversed one-to-one looks like direct foreign keys but they
                 # are reverse relations
@@ -214,6 +229,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                         field, data=self.initial_data[field_name])
                 serializer.is_valid(raise_exception=True)
                 validated_data[field.source] = serializer.save()
+                self.call_after_saved_callback(field_name, instance=instance)
 
         # Update instance
         instance = super(NestedUpdateMixin, self).update(
@@ -262,7 +278,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
 
-            self.call_after_saved_callback(instance, field_name)
+            self.call_after_saved_callback(field_name, instance)
         self.after_reverse_relations_saved(instance)
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
