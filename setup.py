@@ -7,6 +7,19 @@ from io import open
 from setuptools import setup
 
 
+try:
+    from pypandoc import convert
+
+    def read_md(f):
+        return convert(f, 'rst')
+except ImportError:
+    print("warning: pypandoc module not found,"
+          " could not convert Markdown to RST")
+
+    def read_md(f):
+        return open(f, 'r', encoding='utf-8').read()
+
+
 def get_version(package):
     """
     Return package version as listed in `__version__` in `init.py`.
@@ -16,8 +29,6 @@ def get_version(package):
 
 version = get_version('drf_writable_nested')
 
-with open(os.path.join('.', 'README.md'), encoding='utf-8') as f:
-      long_description = f.read()
 
 setup(
     name='drf_writable_nested',
@@ -26,7 +37,7 @@ setup(
     license='BSD',
     description=(
         'Writable nested helpers for django-rest-framework\'s serializers'),
-    long_description=long_description,
+    long_description=read_md('README.md'),
     keywords=('drf restframework rest_framework django_rest_framework'
               ' serializers drf_writable_nested'),
     author='Bro.engineering',
