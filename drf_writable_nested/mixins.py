@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from copy import copy
 from collections import OrderedDict
 
 from django.db.models import ProtectedError
@@ -9,73 +8,14 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 
-class SavePriorityMixin(serializers.Serializer):
-    """
-    This mixin adds ability for set `priority` param to serializer
-    if `NestedCreateMixin`/`NestedUpdateMixin` is used.
-    Serializer with lower priority will be created firstly
-    """
-    def __init__(self, *args, **kwargs):
-        self._save_priority = kwargs.pop('priority', 0)
-        super(SavePriorityMixin, self).__init__(*args, **kwargs)
-
-
 class BaseNestedModelSerializer(serializers.ModelSerializer):
-    def __init__(self, *args, **kwargs):
-        # TODO: Find better solution for this
-        # Copy ignore creation for future manipulations
-        self._ignore_creation = copy(getattr(self.Meta, 'ignore_creation', ()))
-        super(BaseNestedModelSerializer, self).__init__(*args, **kwargs)
-
-    @staticmethod
-    def get_sorted_by_save_priority(items):
-        # Sort items by priority param if `PriorityMixin` is used
-        return OrderedDict(
-            sorted(
-                items.items(),
-                key=lambda item: getattr(item[1], '_save_priority', 0)
-            )
-        )
-
-    def _get_related_field(self, field):
-        model_class = self.Meta.model
-
-        related_field = model_class._meta.get_field(field.source)
-        if isinstance(related_field, ForeignObjectRel):
-            return related_field.field, False
-        return related_field, True
-
-    def _get_new_serializer(self, serializer, **kwargs):
-        kwargs.update({
-            'context': self.context,
-            'partial': self.partial,
-        })
-        return serializer.__class__(**kwargs)
-
-    def call_after_saved_callback(self, field_name, instance=None):
-        method = getattr(self, 'after_{}_saved'.format(field_name), None)
-        if callable(method):
-            method(instance)
-
-    def after_reverse_relations_saved(self, instance):
-        pass
-
-
-class NestedCreateMixin(BaseNestedModelSerializer):
-    """
-    Mixin adds nested create feature.
-    If you want to ignore creation of some fields use Meta param
-    `ignore_creation` with tuple of field names, that will be skipped
-    """
-    def create(self, validated_data):
+    def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
 
-        # Sort fields by save priority
-        fields = self.get_sorted_by_save_priority(self.fields)
         # Remove related fields from validated data for future manipulations
-        for field_name, field in fields.items():
-            if field.read_only or field_name in self._ignore_creation:
+        for field_name, field in self.fields.items():
+            if field.read_only:
                 continue
             related_field, direct = self._get_related_field(field)
 
@@ -105,13 +45,37 @@ class NestedCreateMixin(BaseNestedModelSerializer):
                 else:
                     reverse_relations[field_name] = (related_field, field)
 
+        return relations, reverse_relations
+
+    def _get_related_field(self, field):
+        model_class = self.Meta.model
+
+        related_field = model_class._meta.get_field(field.source)
+        if isinstance(related_field, ForeignObjectRel):
+            return related_field.field, False
+        return related_field, True
+
+    def _get_serializer_for_field(self, field, **kwargs):
+        kwargs.update({
+            'context': self.context,
+            'partial': self.partial,
+        })
+        return field.__class__(**kwargs)
+
+
+class NestedCreateMixin(BaseNestedModelSerializer):
+    """
+    Mixin adds nested create feature
+    """
+    def create(self, validated_data):
+        relations, reverse_relations = self._extract_relations(validated_data)
+
         # Create direct relations (foreign key, one-to-one)
         for field_name, field in relations.items():
-            serializer = self._get_new_serializer(
+            serializer = self._get_serializer_for_field(
                 field, data=self.initial_data[field_name])
             serializer.is_valid(raise_exception=True)
             validated_data[field.source] = serializer.save()
-            self.call_after_saved_callback(field_name)
 
         # Create instance
         instance = super(NestedCreateMixin, self).create(validated_data)
@@ -138,7 +102,8 @@ class NestedCreateMixin(BaseNestedModelSerializer):
             # Create related instances
             new_related_instances = []
             for data in related_data:
-                serializer = self._get_new_serializer(field, data=data)
+                serializer = self._get_serializer_for_field(
+                    field, data=data)
                 serializer.is_valid(raise_exception=True)
                 related_instance = serializer.save(**save_kwargs)
                 new_related_instances.append(related_instance)
@@ -148,15 +113,10 @@ class NestedCreateMixin(BaseNestedModelSerializer):
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
 
-            self.call_after_saved_callback(field_name, instance)
-        self.after_reverse_relations_saved(instance)
-
 
 class NestedUpdateMixin(BaseNestedModelSerializer):
     """
-    Important notice: m2m relations are implemented as reverse foreign keys.
-    It means serializer creates new instance for relation and deletes instance
-    when relation is not given
+    Mixin adds update nested feature
     """
     default_error_messages = {
         'cannot_delete_protected': _(
@@ -178,42 +138,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         return instances
 
     def update(self, instance, validated_data):
-        reverse_relations = OrderedDict()
-        relations = OrderedDict()
-
-        # Sort fields by save priority
-        fields = self.get_sorted_by_save_priority(self.fields)
-        # Remove related fields from validated data for future manipulations
-        for field_name, field in fields.items():
-            if field.read_only:
-                continue
-            related_field, direct = self._get_related_field(field)
-
-            if isinstance(field, serializers.ListSerializer):
-                if isinstance(field.child, serializers.ModelSerializer):
-                    if field.source not in validated_data or \
-                            validated_data.get(field.source) is None:
-                        # Skip field if field is not required or is null
-                        continue
-
-                    validated_data.pop(field.source)
-
-                    reverse_relations[field_name] = (related_field, field.child)
-
-            if isinstance(field, serializers.ModelSerializer):
-                if field.source not in validated_data or \
-                        validated_data.get(field.source) is None:
-                    # Skip field if field is not required or is null
-                    continue
-
-                validated_data.pop(field.source)
-
-                # Reversed one-to-one looks like direct foreign keys but they
-                # are reverse relations
-                if  direct:
-                    relations[field_name] = field
-                else:
-                    reverse_relations[field_name] = (related_field, field)
+        relations, reverse_relations = self._extract_relations(validated_data)
 
         # Create or update direct relations (foreign key, one-to-one)
         if relations:
@@ -222,15 +147,14 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 obj = model_class.objects.filter(
                     pk=self.initial_data[field_name].get('pk')).first()
                 if obj:
-                    serializer = self._get_new_serializer(
+                    serializer = self._get_serializer_for_field(
                         field, instance=obj,
                         data=self.initial_data[field_name])
                 else:
-                    serializer = self._get_new_serializer(
+                    serializer = self._get_serializer_for_field(
                         field, data=self.initial_data[field_name])
                 serializer.is_valid(raise_exception=True)
                 validated_data[field.source] = serializer.save()
-                self.call_after_saved_callback(field_name, instance=instance)
 
         # Update instance
         instance = super(NestedUpdateMixin, self).update(
@@ -261,11 +185,12 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             for data in related_data:
                 is_new = data.get('pk') is None
                 if is_new:
-                    serializer = self._get_new_serializer(field, data=data)
+                    serializer = self._get_serializer_for_field(
+                        field, data=data)
                 else:
                     pk = data.get('pk')
                     obj = instances[pk]
-                    serializer = self._get_new_serializer(
+                    serializer = self._get_serializer_for_field(
                         field, instance=obj, data=data)
 
                 serializer.is_valid(raise_exception=True)
@@ -275,12 +200,9 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     new_related_instances.append(related_instance)
 
             if related_field.many_to_many:
-                # Add m2m instances to through model via add
+                # Add m2m instances via add
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
-
-            self.call_after_saved_callback(field_name, instance)
-        self.after_reverse_relations_saved(instance)
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority

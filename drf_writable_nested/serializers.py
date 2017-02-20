@@ -4,5 +4,5 @@ from .mixins import NestedCreateMixin, NestedUpdateMixin
 
 
 class WritableNestedModelSerializer(NestedCreateMixin, NestedUpdateMixin,
-                                     serializers.ModelSerializer):
+                                    serializers.ModelSerializer):
     pass

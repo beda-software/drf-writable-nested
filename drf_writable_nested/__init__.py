@@ -8,5 +8,5 @@ __copyright__ = 'Copyright 2014-2017 Bro.engineering'
 VERSION = __version__
 
 
-from .mixins import NestedUpdateMixin, NestedCreateMixin, SavePriorityMixin
+from .mixins import NestedUpdateMixin, NestedCreateMixin
 from .serializers import WritableNestedModelSerializer

@@ -1,4 +1,3 @@
-import mock
 from django.test import TestCase
 
 from .models import Site, Avatar, User, Profile, AccessKey
@@ -249,24 +248,3 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Avatar.objects.count(), 2)
         # Old access key shouldn't be deleted
         self.assertEqual(AccessKey.objects.count(), 2)
-
-    @mock.patch('tests.serializers.after_access_key_saved_callback')
-    @mock.patch('tests.serializers.after_avatars_saved_callback')
-    @mock.patch('tests.serializers.after_profile_saved_callback')
-    @mock.patch('tests.serializers.after_reverse_relations_saved_callback')
-    def test_save_hooks(self, after_reverse_relations_saved_callback_mock,
-                        after_profile_saved_callback_mock,
-                        after_avatars_saved_callback_mock,
-                        after_access_key_saved_callback_mock):
-        serializer = UserSerializer(data=self.get_initial_data())
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        self.assertTrue(
-            after_reverse_relations_saved_callback_mock.called_with(user))
-        self.assertTrue(
-            after_profile_saved_callback_mock.called_with(None))
-        self.assertTrue(
-            after_avatars_saved_callback_mock.called_with(user))
-        self.assertTrue(
-            after_access_key_saved_callback_mock.called_with(user))

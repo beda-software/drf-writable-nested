@@ -101,14 +101,6 @@ class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'profile', 'username',)
-        
-    # Optional callback - will be called after reverse relations will be saved 
-    def after_reverse_relations_saved(self, instance):
-        after_reverse_relations_saved_callback()
-    
-    # Optional callback - will be called after profile relation will be saved
-    def after_profile_saved(self):
-        after_profile_saved_callback()
 ```
 
 Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` if you want 
