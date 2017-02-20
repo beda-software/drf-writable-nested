@@ -2,8 +2,15 @@ DRF Writable Nested
 ====================
 [![Build Status](https://travis-ci.org/Brogency/drf-writable-nested.svg?branch=master)](https://travis-ci.org/Brogency/drf-writable-nested)
 [![codecov](https://codecov.io/gh/Brogency/drf-writable-nested/branch/master/graph/badge.svg)](https://codecov.io/gh/Brogency/drf-writable-nested)
+[![pypi](https://img.shields.io/pypi/v/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 
-This is a writable nested model serializer for Django REST Framework.
+This is a writable nested model serializer for Django REST Framework which
+allows you to create/update your models with related nested data. 
+
+The following relations are supported:
+- OneToOne (direct/reverse)
+- ForeignKey (direct/reverse)
+- ManyToMany (direct/reverse excluding m2m relations with through model)
 
 Requirements
 ============
@@ -21,6 +28,7 @@ pip install drf-writable-nested
 
 Usage
 =====
+
 For example, for the following model structure:
 ```python
 from django.db import models
@@ -49,7 +57,7 @@ class Avatar(models.Model):
     profile = models.ForeignKey(Profile, related_name='avatars')
 ```
 
-We should create the following list of serialzers:
+We should create the following list of serializers:
 
 ```python
 from rest_framework import serializers
@@ -103,75 +111,84 @@ class UserSerializer(WritableNestedModelSerializer):
         fields = ('pk', 'profile', 'username',)
 ```
 
-Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` if you want 
-to implement only create or update logic.
+Also, you can use `NestedCreateMixin` or `NestedUpdateMixin` from this package
+if you want to support only create or update logic.
 
-For example, if we have `/user/` endpoint for user creation with `UserSerializer`, 
-we should send the following data:
+For example, we can pass the following data with related nested fields to our
+main serializer:
 
-```json
-{
-    "username": "test",
-    "profile": {
-        "access_key": {
-            "key": "key"
+```python
+data = {
+    'username': 'test',
+    'profile': {
+        'access_key': {
+            'key': 'key',
         },
-        "sites": [
+        'sites': [
             {
-                "url": "http://google.com"   
+                'url': 'http://google.com',
             },
             {
-                "url": "http://yahoo.com"   
-            }
+                'url': 'http://yahoo.com',   
+            },
         ],
-        "avatars": [
+        'avatars': [
             {
-                "image": "image-1.png"
+                'image': 'image-1.png',
             },
             {
-                "image": "image-2.png"
-            }  
-        ]
-    }
+                'image': 'image-2.png',
+            },  
+        ],
+    },
 }
+
+user_serializer = UserSerializer(data=data)
+user_serializer.is_valid(raise_exceptions=True)
+user = user_serializer.save()
 ```
 
-This serializer automatically will create all relations and we can see the output 
-like the following example:
-```json
+This serializer automatically will create all nested relations and we receive a 
+complete instance with filled data.
+```python
+user_serializer = UserSerializer(instance=user)
+print(user_serializer.data)
+```
+
+```python
 {
-    "pk": 1,
-    "username": "test",
-    "profile": {
-        "pk": 1,
-        "access_key": {
-            "pk": 1,
-            "key": "key"
+    'pk': 1,
+    'username': 'test',
+    'profile': {
+        'pk': 1,
+        'access_key': {
+            'pk': 1,
+            'key': 'key'
         },
-        "sites": [
+        'sites': [
             {
-                "pk": 1,
-                "url": "http://google.com"   
+                'pk': 1,
+                'url': 'http://google.com',
             },
             {
-                "pk": 2,
-                "url": "http://yahoo.com"   
-            }
+                'pk': 2,
+                'url': 'http://yahoo.com',
+            },
         ],
-        "avatars": [
+        'avatars': [
             {
-                "pk": 1,
-                "image": "image-1.png"
+                'pk': 1,
+                'image': 'image-1.png',
             },
             {
-                "pk": 2,
-                "image": "image-2.png"
-            }  
-        ]
-    }
+                'pk': 2,
+                'image': 'image-2.png',
+            },
+        ],
+    },
 }
 ```
 
 Authors
 =======
-Bro.engineering
+2014-2017, Bro.engineering

@@ -4,7 +4,6 @@ from collections import OrderedDict
 from django.db.models import ProtectedError
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
-
 from rest_framework import serializers
 
 
