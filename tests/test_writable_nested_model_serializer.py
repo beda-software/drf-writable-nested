@@ -241,51 +241,6 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Avatar.objects.count(), 2)
         self.assertEqual(AccessKey.objects.count(), 1)
 
-    def test_partial_update_direct_fk_to_null(self):
-        serializer = UserSerializer(data=self.get_initial_data())
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
-
-        # Partial update
-        user_pk = user.pk
-        profile_pk = user.profile.pk
-
-        serializer = UserSerializer(
-            instance=user,
-            partial=True,
-            data={
-                'pk': user_pk,
-                'profile': {
-                    'pk': profile_pk,
-                    'access_key': None,
-                },
-            }
-        )
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        user.refresh_from_db()
-        self.assertIsNotNone(user)
-        self.assertEqual(user.pk, user_pk)
-        self.assertEqual(user.username, 'test')
-
-        profile = user.profile
-        self.assertIsNotNone(profile)
-        self.assertIsNone(profile.access_key)
-
-        # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
-
     def test_nested_partial_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
