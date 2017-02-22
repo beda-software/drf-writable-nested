@@ -144,7 +144,7 @@ data = {
 }
 
 user_serializer = UserSerializer(data=data)
-user_serializer.is_valid(raise_exceptions=True)
+user_serializer.is_valid(raise_exception=True)
 user = user_serializer.save()
 ```
 
