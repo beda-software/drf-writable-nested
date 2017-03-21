@@ -33,13 +33,13 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     # Skip field if field is not required
                     continue
 
-                if direct and validated_data.get(field.source) is None:
-                    # Don't process null field for direct relations
-                    # DRF processes these values natively
-                    continue
+                if validated_data.get(field.source) is None:
+                    if direct:
+                        # Don't process null value for direct relations
+                        # Native create/update processes these values
+                        continue
 
                 validated_data.pop(field.source)
-
                 # Reversed one-to-one looks like direct foreign keys but they
                 # are reverse relations
                 if direct:
@@ -97,8 +97,12 @@ class NestedCreateMixin(BaseNestedModelSerializer):
                 save_kwargs = {related_field.name: instance}
 
             related_data = self.initial_data[field_name]
+
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
+                # Skip processing for empty data
+                if related_data is None:
+                    continue
                 related_data = [related_data]
 
             # Create related instances
@@ -130,7 +134,8 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         model_class = field.Meta.model
         instances = model_class.objects.filter(
             pk__in=[
-                d.get('pk') for d in related_data if d.get('pk', None)
+                d.get('pk') for d in related_data
+                if d is not None and d.get('pk', None)
             ]
         )
         instances = {
@@ -174,6 +179,9 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             related_data = self.initial_data[field_name]
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
+                if related_data is None:
+                    # Skip processing for empty data
+                    continue
                 related_data = [related_data]
 
             instances = self.prefetch_related_instances(field, related_data)
@@ -228,7 +236,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             else:
                 related_field_name = related_field.name
 
-            current_ids = [d.get('pk') for d in related_data]
+            current_ids = [d.get('pk') for d in related_data if d is not None]
             try:
                 pks_to_delete = list(
                     model_class.objects.filter(

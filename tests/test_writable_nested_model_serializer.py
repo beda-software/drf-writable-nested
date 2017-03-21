@@ -61,6 +61,18 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Avatar.objects.count(), 2)
         self.assertEqual(AccessKey.objects.count(), 1)
 
+    def test_create_with_not_specified_reverse_one_to_one(self):
+        serializer = UserSerializer(data={'username': 'test',})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertFalse(Profile.objects.filter(user=user).exists())
+
+    def test_create_with_empty_reverse_one_to_one(self):
+        serializer = UserSerializer(data={'username': 'test', 'profile': None})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertFalse(Profile.objects.filter(user=user).exists())
+
     def test_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
@@ -134,6 +146,24 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Avatar.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
         self.assertEqual(AccessKey.objects.count(), 1)
+
+    def test_update_with_empty_reverse_one_to_one(self):
+        serializer = UserSerializer(data=self.get_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertIsNotNone(user.profile)
+
+        serializer = UserSerializer(
+            instance=user,
+            data={
+                'pk': user.pk,
+                'username': 'new',
+                'profile': None
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertFalse(Profile.objects.filter(user=user).exists())
 
     def test_partial_update(self):
         serializer = UserSerializer(data=self.get_initial_data())

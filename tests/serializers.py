@@ -44,7 +44,7 @@ class ProfileSerializer(WritableNestedModelSerializer):
 
 class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
-    profile = ProfileSerializer()
+    profile = ProfileSerializer(required=False, allow_null=True)
 
     class Meta:
         model = User
