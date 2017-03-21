@@ -29,9 +29,13 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 reverse_relations[field_name] = (related_field, field.child)
 
             if isinstance(field, serializers.ModelSerializer):
-                if field.source not in validated_data or \
-                        validated_data.get(field.source) is None:
-                    # Skip field if field is not required or is null
+                if field.source not in validated_data:
+                    # Skip field if field is not required
+                    continue
+
+                if direct and validated_data.get(field.source) is None:
+                    # Don't process null field for direct relations
+                    # DRF processes these values natively
                     continue
 
                 validated_data.pop(field.source)
