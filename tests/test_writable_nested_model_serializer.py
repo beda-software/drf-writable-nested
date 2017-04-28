@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from .models import Site, Avatar, User, Profile, AccessKey
-from .serializers import UserSerializer
+from .serializers import UserSerializer, CustomSerializer
 
 
 class WritableNestedModelSerializerTest(TestCase):
@@ -72,6 +72,14 @@ class WritableNestedModelSerializerTest(TestCase):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertFalse(Profile.objects.filter(user=user).exists())
+
+    def test_create_with_custom_field(self):
+        data = self.get_initial_data()
+        data['custom_field'] = 'custom value'
+        serializer = CustomSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertIsNotNone(user)
 
     def test_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
