@@ -49,3 +49,17 @@ class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'profile', 'username',)
+
+
+class CustomSerializer(UserSerializer):
+    # Simulate having non-modelfield information on the serializer
+    custom_field = serializers.CharField()
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + (
+            'custom_field',
+        )
+
+    def validate(self, attrs):
+        attrs.pop('custom_field', None)
+        return attrs

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
@@ -16,7 +16,10 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         for field_name, field in self.fields.items():
             if field.read_only:
                 continue
-            related_field, direct = self._get_related_field(field)
+            try:
+                related_field, direct = self._get_related_field(field)
+            except FieldDoesNotExist:
+                continue
 
             if isinstance(field, serializers.ListSerializer) and \
                     isinstance(field.child, serializers.ModelSerializer):
