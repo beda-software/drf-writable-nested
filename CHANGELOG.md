@@ -1,5 +1,8 @@
-## 0.1.2
+## 0.1.3
 * Handle when serializer has a field that's not on the model #5 (@tjwatch)
+
+## 0.1.2
+* Fix problem with null values for reverse relations
 
 ## 0.1.0 
 * Remove unneeded functional
