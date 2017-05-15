@@ -1,7 +1,7 @@
 from django.test import TestCase
 
-from .models import Site, Avatar, User, Profile, AccessKey
-from .serializers import UserSerializer, CustomSerializer
+from .models import Site, Avatar, User, Profile, AccessKey, Tag, TaggedItem
+from .serializers import UserSerializer, CustomSerializer, TaggedItemSerializer
 
 
 class WritableNestedModelSerializerTest(TestCase):
@@ -80,6 +80,23 @@ class WritableNestedModelSerializerTest(TestCase):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertIsNotNone(user)
+
+    def test_create_with_generic_relation(self):
+        first_tag = 'the_first_tag'
+        next_tag = 'the_next_tag'
+        data = {
+            'tags': [
+                {'tag': first_tag},
+                {'tag': next_tag},
+            ],
+        }
+        serializer = TaggedItemSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        item = serializer.save()
+        self.assertIsNotNone(item)
+        self.assertEqual(2, Tag.objects.count())
+        self.assertEqual(first_tag, item.tags.all()[0].tag)
+        self.assertEqual(next_tag, item.tags.all()[1].tag)
 
     def test_update(self):
         serializer = UserSerializer(data=self.get_initial_data())
@@ -338,3 +355,46 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(Avatar.objects.count(), 2)
         # Old access key shouldn't be deleted
         self.assertEqual(AccessKey.objects.count(), 2)
+
+    def test_update_with_generic_relation(self):
+        item = TaggedItem.objects.create()
+        serializer = TaggedItemSerializer(
+            instance=item,
+            data={
+                'tags': [{
+                    'tag': 'the_tag',
+                }]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        item.refresh_from_db()
+        self.assertEqual(1, item.tags.count())
+
+        serializer = TaggedItemSerializer(
+            instance=item,
+            data={
+                'tags': [{
+                    'pk': item.tags.get().pk,
+                    'tag': 'the_new_tag',
+                }]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        item.refresh_from_db()
+        self.assertEqual('the_new_tag', item.tags.get().tag)
+
+        serializer = TaggedItemSerializer(
+            instance=item,
+            data={
+                'tags': [{
+                    'tag': 'the_third_tag',
+                }]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        item.refresh_from_db()
+        self.assertEqual(1, item.tags.count())
+        self.assertEqual('the_third_tag', item.tags.get().tag)

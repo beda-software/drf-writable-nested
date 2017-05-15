@@ -11,6 +11,7 @@ The following relations are supported:
 - OneToOne (direct/reverse)
 - ForeignKey (direct/reverse)
 - ManyToMany (direct/reverse excluding m2m relations with through model)
+- GenericRelation (this is always only reverse)
 
 Requirements
 ============
@@ -148,7 +149,7 @@ user_serializer.is_valid(raise_exception=True)
 user = user_serializer.save()
 ```
 
-This serializer automatically will create all nested relations and we receive a 
+This serializer will automatically create all nested relations and we receive a 
 complete instance with filled data.
 ```python
 user_serializer = UserSerializer(instance=user)
