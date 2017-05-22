@@ -33,15 +33,15 @@ version = get_version('drf_writable_nested')
 setup(
     name='drf-writable-nested',
     version=version,
-    url='http://github.com/Brogency/drf-writable-nested',
+    url='http://github.com/beda-software/drf-writable-nested',
     license='BSD',
     description=(
         'Writable nested helpers for django-rest-framework\'s serializers'),
     long_description=read_md('README.md'),
     keywords=('drf restframework rest_framework django_rest_framework'
               ' serializers drf_writable_nested'),
-    author='Bro.engineering',
-    author_email='drfwritablenested@bro.engineering',
+    author='beda.software',
+    author_email='drfwritablenested@beda.software',
     packages=['drf_writable_nested'],
     zip_safe=False,
     classifiers=[
