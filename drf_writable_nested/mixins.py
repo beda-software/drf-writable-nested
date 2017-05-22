@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 
+from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
@@ -67,6 +69,21 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         })
         return field.__class__(**kwargs)
 
+    def _get_save_kwargs(self, instance, related_field):
+        if related_field.many_to_many:
+            save_kwargs = {}
+        elif isinstance(related_field, GenericRelation):
+            save_kwargs = self._get_generic_lookup(instance, related_field)
+        else:
+            save_kwargs = {related_field.name: instance}
+        return save_kwargs
+
+    def _get_generic_lookup(self, instance, related_field):
+        return {
+            related_field.content_type_field_name: ContentType.objects.get_for_model(instance),
+            related_field.object_id_field_name: instance.pk,
+        }
+
 
 class NestedCreateMixin(BaseNestedModelSerializer):
     """
@@ -94,10 +111,7 @@ class NestedCreateMixin(BaseNestedModelSerializer):
         # Create reverse relations
         # many-to-one, many-to-many, reversed one-to-one
         for field_name, (related_field, field) in reverse_relations.items():
-            if related_field.many_to_many:
-                save_kwargs = {}
-            else:
-                save_kwargs = {related_field.name: instance}
+            save_kwargs = self._get_save_kwargs(instance, related_field)
 
             related_data = self.initial_data[field_name]
 
@@ -189,10 +203,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
 
             instances = self.prefetch_related_instances(field, related_data)
 
-            if related_field.many_to_many:
-                save_kwargs = {}
-            else:
-                save_kwargs = {related_field.name: instance}
+            save_kwargs = self._get_save_kwargs(instance, related_field)
 
             new_related_instances = []
             for data in related_data:
@@ -235,15 +246,21 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             # should use reverse relation name
             if related_field.many_to_many and \
                     not isinstance(related_field, ForeignObjectRel):
-                related_field_name =  related_field.rel.name
+                related_field_lookup = {
+                    related_field.rel.name: instance,
+                }
+            elif isinstance(related_field, GenericRelation):
+                related_field_lookup = self._get_generic_lookup(instance, related_field)
             else:
-                related_field_name = related_field.name
+                related_field_lookup = {
+                    related_field.name: instance,
+                }
 
             current_ids = [d.get('pk') for d in related_data if d is not None]
             try:
                 pks_to_delete = list(
                     model_class.objects.filter(
-                        **{related_field_name: instance}
+                        **related_field_lookup
                     ).exclude(
                         pk__in=current_ids
                     ).values_list('pk', flat=True)

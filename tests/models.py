@@ -1,3 +1,5 @@
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
@@ -23,3 +25,16 @@ class Avatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(Profile, related_name='avatars')
 
+
+class Tag(models.Model):
+    tag = models.SlugField()
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE
+    )
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+
+class TaggedItem(models.Model):
+    tags = GenericRelation(Tag)
