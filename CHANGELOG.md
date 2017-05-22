@@ -1,3 +1,6 @@
+## 0.1.4
+* Add support for GenericRelation (@tjwatch)
+
 ## 0.1.3
 * Handle when serializer has a field that's not on the model #5 (@tjwatch)
 
