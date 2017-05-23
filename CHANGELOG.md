@@ -1,8 +1,8 @@
 ## 0.1.4
-* Add support for GenericRelation (@tjwatch)
+* Add support for GenericRelation (@tjwalch)
 
 ## 0.1.3
-* Handle when serializer has a field that's not on the model #5 (@tjwatch)
+* Handle when serializer has a field that's not on the model #5 (@tjwalch)
 
 ## 0.1.2
 * Fix problem with null values for reverse relations
