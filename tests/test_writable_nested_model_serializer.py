@@ -400,3 +400,50 @@ class WritableNestedModelSerializerTest(TestCase):
         item.refresh_from_db()
         self.assertEqual(1, item.tags.count())
         self.assertEqual('the_third_tag', item.tags.get().tag)
+
+    def test_create_m2m_with_existing_related_objects(self):
+        users = [
+            models.User.objects.create(username='user one'),
+            models.User.objects.create(username='user two'),
+        ]
+        user_data = serializers.UserSerializer(
+            users,
+            many=True
+        ).data
+        user_data.append({'username': 'user three'})
+        user_data[0]['username'] = 'first user'
+        data = {
+            'name': 'Team Test',
+            'members': user_data,
+        }
+        serializer = serializers.TeamSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        team = serializer.save()
+        self.assertEqual(3, team.members.count())
+        self.assertEqual(3, models.User.objects.count())
+        self.assertEqual('first user', team.members.first().username)
+
+        #update
+        data = serializers.TeamSerializer(team).data
+        data['members'].append({'username': 'last user'})
+        serializer = serializers.TeamSerializer(team, data=data)
+        self.assertTrue(serializer.is_valid())
+        team = serializer.save()
+        self.assertEqual(4, team.members.count())
+        self.assertEqual(4, models.User.objects.count())
+        self.assertEqual('last user', team.members.last().username)
+
+    def test_create_fk_with_existing_related_object(self):
+        user = models.User.objects.create(username='user one')
+        profile = models.Profile.objects.create(user=user)
+        avatar = models.Avatar.objects.create(profile=profile)
+        data = self.get_initial_data()
+        data['profile']['avatars'][0]['pk'] = avatar.pk
+        serializer = serializers.UserSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        new_user = serializer.save()
+        self.assertEqual(2, models.Avatar.objects.count())
+        avatar.refresh_from_db()
+        self.assertEqual('image-1.png', avatar.image)
+        self.assertNotEqual(new_user.profile, profile)
+        self.assertEqual(new_user.profile, avatar.profile)

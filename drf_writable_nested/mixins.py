@@ -84,6 +84,57 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             related_field.object_id_field_name: instance.pk,
         }
 
+    def prefetch_related_instances(self, field, related_data):
+        model_class = field.Meta.model
+        instances = model_class.objects.filter(
+            pk__in=[
+                d.get('pk') for d in related_data
+                if d is not None and d.get('pk', None)
+            ]
+        )
+        instances = {
+            related_instance.pk: related_instance
+            for related_instance in instances
+        }
+        return instances
+
+    def update_or_create_reverse_relations(self, instance, reverse_relations):
+        # Update or create reverse relations:
+        # many-to-one, many-to-many, reversed one-to-one
+        for field_name, (related_field, field) in reverse_relations.items():
+            related_data = self.initial_data[field_name]
+            # Expand to array of one item for one-to-one for uniformity
+            if related_field.one_to_one:
+                if related_data is None:
+                    # Skip processing for empty data
+                    continue
+                related_data = [related_data]
+
+            instances = self.prefetch_related_instances(field, related_data)
+
+            save_kwargs = self._get_save_kwargs(instance, related_field)
+
+            new_related_instances = []
+            for data in related_data:
+                if data.get('pk') is None:
+                    serializer = self._get_serializer_for_field(
+                        field, data=data)
+                else:
+                    pk = data.get('pk')
+                    obj = instances[pk]
+                    serializer = self._get_serializer_for_field(
+                        field, instance=obj, data=data)
+
+                serializer.is_valid(raise_exception=True)
+                related_instance = serializer.save(**save_kwargs)
+                data.setdefault('pk', related_instance.pk)
+                new_related_instances.append(related_instance)
+
+            if related_field.many_to_many:
+                # Add m2m instances to through model via add
+                m2m_manager = getattr(instance, field_name)
+                m2m_manager.add(*new_related_instances)
+
 
 class NestedCreateMixin(BaseNestedModelSerializer):
     """
@@ -103,38 +154,9 @@ class NestedCreateMixin(BaseNestedModelSerializer):
         instance = super(NestedCreateMixin, self).create(validated_data)
 
         if reverse_relations:
-            self.create_reverse_relations(instance, reverse_relations)
+            self.update_or_create_reverse_relations(instance, reverse_relations)
 
         return instance
-
-    def create_reverse_relations(self, instance, reverse_relations):
-        # Create reverse relations
-        # many-to-one, many-to-many, reversed one-to-one
-        for field_name, (related_field, field) in reverse_relations.items():
-            save_kwargs = self._get_save_kwargs(instance, related_field)
-
-            related_data = self.initial_data[field_name]
-
-            # Expand to array of one item for one-to-one for uniformity
-            if related_field.one_to_one:
-                # Skip processing for empty data
-                if related_data is None:
-                    continue
-                related_data = [related_data]
-
-            # Create related instances
-            new_related_instances = []
-            for data in related_data:
-                serializer = self._get_serializer_for_field(
-                    field, data=data)
-                serializer.is_valid(raise_exception=True)
-                related_instance = serializer.save(**save_kwargs)
-                new_related_instances.append(related_instance)
-
-            if related_field.many_to_many:
-                # Add m2m instances to through model via add
-                m2m_manager = getattr(instance, field_name)
-                m2m_manager.add(*new_related_instances)
 
 
 class NestedUpdateMixin(BaseNestedModelSerializer):
@@ -146,20 +168,6 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             "Cannot delete {instances} because "
             "protected relation exists")
     }
-
-    def prefetch_related_instances(self, field, related_data):
-        model_class = field.Meta.model
-        instances = model_class.objects.filter(
-            pk__in=[
-                d.get('pk') for d in related_data
-                if d is not None and d.get('pk', None)
-            ]
-        )
-        instances = {
-            related_instance.pk: related_instance
-            for related_instance in instances
-        }
-        return instances
 
     def update(self, instance, validated_data):
         relations, reverse_relations = self._extract_relations(validated_data)
@@ -185,48 +193,9 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             instance, validated_data)
 
         if reverse_relations:
-            self.update_reverse_relations(instance, reverse_relations)
+            self.update_or_create_reverse_relations(instance, reverse_relations)
             self.delete_reverse_relations_if_need(instance, reverse_relations)
         return instance
-
-    def update_reverse_relations(self, instance, reverse_relations):
-        # Update reverse relations:
-        # many-to-one, many-to-many, reversed one-to-one
-        for field_name, (related_field, field) in reverse_relations.items():
-            related_data = self.initial_data[field_name]
-            # Expand to array of one item for one-to-one for uniformity
-            if related_field.one_to_one:
-                if related_data is None:
-                    # Skip processing for empty data
-                    continue
-                related_data = [related_data]
-
-            instances = self.prefetch_related_instances(field, related_data)
-
-            save_kwargs = self._get_save_kwargs(instance, related_field)
-
-            new_related_instances = []
-            for data in related_data:
-                is_new = data.get('pk') is None
-                if is_new:
-                    serializer = self._get_serializer_for_field(
-                        field, data=data)
-                else:
-                    pk = data.get('pk')
-                    obj = instances[pk]
-                    serializer = self._get_serializer_for_field(
-                        field, instance=obj, data=data)
-
-                serializer.is_valid(raise_exception=True)
-                related_instance = serializer.save(**save_kwargs)
-                if is_new:
-                    data['pk'] = related_instance.pk
-                    new_related_instances.append(related_instance)
-
-            if related_field.many_to_many:
-                # Add m2m instances via add
-                m2m_manager = getattr(instance, field_name)
-                m2m_manager.add(*new_related_instances)
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority

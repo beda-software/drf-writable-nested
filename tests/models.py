@@ -38,3 +38,8 @@ class Tag(models.Model):
 
 class TaggedItem(models.Model):
     tags = GenericRelation(Tag)
+
+
+class Team(models.Model):
+    name = models.CharField(max_length=100)
+    members = models.ManyToManyField(User)

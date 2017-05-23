@@ -83,3 +83,14 @@ class TaggedItemSerializer(WritableNestedModelSerializer):
         fields = (
             'tags',
         )
+
+
+class TeamSerializer(WritableNestedModelSerializer):
+    members = UserSerializer(many=True)
+
+    class Meta:
+        model = models.Team
+        fields = (
+            'members',
+            'name',
+        )
