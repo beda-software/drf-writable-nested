@@ -116,15 +116,12 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             new_related_instances = []
             for data in related_data:
-                if data.get('pk') is None:
-                    serializer = self._get_serializer_for_field(
-                        field, data=data)
-                else:
-                    pk = data.get('pk')
-                    obj = instances[pk]
-                    serializer = self._get_serializer_for_field(
-                        field, instance=obj, data=data)
-
+                obj = instances.get(data.get('pk'))
+                serializer = self._get_serializer_for_field(
+                    field,
+                    instance=obj,
+                    data=data,
+                )
                 serializer.is_valid(raise_exception=True)
                 related_instance = serializer.save(**save_kwargs)
                 data.setdefault('pk', related_instance.pk)
