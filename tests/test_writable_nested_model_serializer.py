@@ -447,3 +447,22 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual('image-1.png', avatar.image)
         self.assertNotEqual(new_user.profile, profile)
         self.assertEqual(new_user.profile, avatar.profile)
+
+    def test_create_with_existing_direct_fk_object(self):
+        access_key = models.AccessKey.objects.create(
+            key='the-key',
+        )
+        serializer = serializers.AccessKeySerializer(
+            instance=access_key,
+        )
+        data = self.get_initial_data()
+        data['profile']['access_key'] = serializer.data
+        data['profile']['access_key']['key'] = 'new-key'
+        serializer = serializers.UserSerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        access_key.refresh_from_db()
+        self.assertEqual(access_key, user.profile.access_key)
+        self.assertEqual('new-key', access_key.key)

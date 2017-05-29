@@ -135,6 +135,24 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
 
+    def update_or_create_direct_relations(self, attrs, relations):
+        for field_name, field in relations.items():
+            obj = None
+            data = self.initial_data[field_name]
+            pk = data.get('pk')
+            if pk:
+                model_class = field.Meta.model
+                obj = model_class.objects.filter(
+                    pk=pk,
+                ).first()
+            serializer = self._get_serializer_for_field(
+                field,
+                instance=obj,
+                data=data,
+            )
+            serializer.is_valid(raise_exception=True)
+            attrs[field.source] = serializer.save()
+
 
 class NestedCreateMixin(BaseNestedModelSerializer):
     """
@@ -143,18 +161,16 @@ class NestedCreateMixin(BaseNestedModelSerializer):
     def create(self, validated_data):
         relations, reverse_relations = self._extract_relations(validated_data)
 
-        # Create direct relations (foreign key, one-to-one)
-        for field_name, field in relations.items():
-            serializer = self._get_serializer_for_field(
-                field, data=self.initial_data[field_name])
-            serializer.is_valid(raise_exception=True)
-            validated_data[field.source] = serializer.save()
+        # Create or update direct relations (foreign key, one-to-one)
+        self.update_or_create_direct_relations(
+            validated_data,
+            relations,
+        )
 
         # Create instance
         instance = super(NestedCreateMixin, self).create(validated_data)
 
-        if reverse_relations:
-            self.update_or_create_reverse_relations(instance, reverse_relations)
+        self.update_or_create_reverse_relations(instance, reverse_relations)
 
         return instance
 
@@ -173,28 +189,18 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         relations, reverse_relations = self._extract_relations(validated_data)
 
         # Create or update direct relations (foreign key, one-to-one)
-        if relations:
-            for field_name, field in relations.items():
-                model_class = field.Meta.model
-                obj = model_class.objects.filter(
-                    pk=self.initial_data[field_name].get('pk')).first()
-                if obj:
-                    serializer = self._get_serializer_for_field(
-                        field, instance=obj,
-                        data=self.initial_data[field_name])
-                else:
-                    serializer = self._get_serializer_for_field(
-                        field, data=self.initial_data[field_name])
-                serializer.is_valid(raise_exception=True)
-                validated_data[field.source] = serializer.save()
+        self.update_or_create_direct_relations(
+            validated_data,
+            relations,
+        )
 
         # Update instance
         instance = super(NestedUpdateMixin, self).update(
-            instance, validated_data)
-
-        if reverse_relations:
-            self.update_or_create_reverse_relations(instance, reverse_relations)
-            self.delete_reverse_relations_if_need(instance, reverse_relations)
+            instance,
+            validated_data,
+        )
+        self.update_or_create_reverse_relations(instance, reverse_relations)
+        self.delete_reverse_relations_if_need(instance, reverse_relations)
         return instance
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
