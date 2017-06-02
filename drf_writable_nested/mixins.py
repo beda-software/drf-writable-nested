@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -69,15 +69,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         })
         return field.__class__(**kwargs)
 
-    def _get_save_kwargs(self, instance, related_field):
-        if related_field.many_to_many:
-            save_kwargs = {}
-        elif isinstance(related_field, GenericRelation):
-            save_kwargs = self._get_generic_lookup(instance, related_field)
-        else:
-            save_kwargs = {related_field.name: instance}
-        return save_kwargs
-
     def _get_generic_lookup(self, instance, related_field):
         return {
             related_field.content_type_field_name: ContentType.objects.get_for_model(instance),
@@ -112,7 +103,13 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             instances = self.prefetch_related_instances(field, related_data)
 
-            save_kwargs = self._get_save_kwargs(instance, related_field)
+            save_kwargs = self.get_save_kwargs(field_name)
+            if isinstance(related_field, GenericRelation):
+                save_kwargs.update(
+                    self._get_generic_lookup(instance, related_field),
+                )
+            elif not related_field.many_to_many:
+                save_kwargs[related_field.name] = instance
 
             new_related_instances = []
             for data in related_data:
@@ -148,7 +145,21 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 data=data,
             )
             serializer.is_valid(raise_exception=True)
-            attrs[field.source] = serializer.save()
+            attrs[field.source] = serializer.save(
+                **self.get_save_kwargs(field_name)
+            )
+
+    def save(self, **kwargs):
+        self.save_kwargs = defaultdict(dict, kwargs)
+        return super(BaseNestedModelSerializer, self).save(**kwargs)
+
+    def get_save_kwargs(self, field_name):
+        save_kwargs = self.save_kwargs[field_name]
+        if not isinstance(save_kwargs, dict):
+            raise TypeError(
+                _("Arguments to nested serialiser's `save` must be dict's")
+            )
+        return save_kwargs
 
 
 class NestedCreateMixin(BaseNestedModelSerializer):

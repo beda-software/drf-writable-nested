@@ -466,3 +466,18 @@ class WritableNestedModelSerializerTest(TestCase):
         access_key.refresh_from_db()
         self.assertEqual(access_key, user.profile.access_key)
         self.assertEqual('new-key', access_key.key)
+
+    def test_create_with_save_kwargs(self):
+        data = self.get_initial_data()
+        serializer = serializers.UserSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save(
+            profile={
+                'access_key': {'key': 'key2'},
+                'sites': {'url': 'http://test.com'}
+            },
+        )
+        self.assertEqual('key2', user.profile.access_key.key)
+        sites = list(user.profile.sites.all())
+        self.assertEqual('http://test.com', sites[0].url)
+        self.assertEqual('http://test.com', sites[1].url)
