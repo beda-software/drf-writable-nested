@@ -77,17 +77,22 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
     def prefetch_related_instances(self, field, related_data):
         model_class = field.Meta.model
-        instances = model_class.objects.filter(
-            pk__in=[
-                d.get('pk') for d in related_data
-                if d is not None and d.get('pk', None)
-            ]
-        )
+        pk_list = []
+        for d in filter(None, related_data):
+            pk = self._get_related_pk(d, model_class)
+            if pk:
+                pk_list.append(pk)
         instances = {
             related_instance.pk: related_instance
-            for related_instance in instances
+            for related_instance in model_class.objects.filter(
+                pk__in=pk_list,
+            )
         }
         return instances
+
+    def _get_related_pk(self, data, model_class):
+        return data.get('pk') or \
+               data.get(model_class._meta.pk.attname)
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
@@ -113,7 +118,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             new_related_instances = []
             for data in related_data:
-                obj = instances.get(data.get('pk'))
+                obj = instances.get(
+                    self._get_related_pk(data, field.Meta.model)
+                )
                 serializer = self._get_serializer_for_field(
                     field,
                     instance=obj,
@@ -121,7 +128,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 )
                 serializer.is_valid(raise_exception=True)
                 related_instance = serializer.save(**save_kwargs)
-                data.setdefault('pk', related_instance.pk)
+                data['pk'] = related_instance.pk
                 new_related_instances.append(related_instance)
 
             if related_field.many_to_many:
@@ -133,9 +140,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         for field_name, field in relations.items():
             obj = None
             data = self.initial_data[field_name]
-            pk = data.get('pk')
+            model_class = field.Meta.model
+            pk = self._get_related_pk(data, model_class)
             if pk:
-                model_class = field.Meta.model
                 obj = model_class.objects.filter(
                     pk=pk,
                 ).first()

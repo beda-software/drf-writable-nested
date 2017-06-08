@@ -94,3 +94,25 @@ class TeamSerializer(WritableNestedModelSerializer):
             'members',
             'name',
         )
+
+
+class CustomPKSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.CustomPK
+        fields = (
+            'slug',
+        )
+
+
+class UserWithCustomPKSerializer(WritableNestedModelSerializer):
+    custompks = CustomPKSerializer(
+        many=True,
+    )
+
+    class Meta:
+        model = models.User
+        fields = (
+            'custompks',
+            'username',
+        )

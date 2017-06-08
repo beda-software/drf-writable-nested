@@ -481,3 +481,34 @@ class WritableNestedModelSerializerTest(TestCase):
         sites = list(user.profile.sites.all())
         self.assertEqual('http://test.com', sites[0].url)
         self.assertEqual('http://test.com', sites[1].url)
+
+    def test_custom_pk(self):
+        data = {
+            'username': 'username',
+            'custompks': [{
+                'slug': 'custom-key',
+            }]
+        }
+        serializer = serializers.UserWithCustomPKSerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        self.assertEqual('custom-key',
+                         user.custompks.first().slug)
+        data['custompks'].append({
+            'slug': 'next-key',
+        })
+        data['custompks'][0]['slug'] = 'key2'
+        serializer = serializers.UserWithCustomPKSerializer(
+            data=data,
+            instance=user,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        user.refresh_from_db()
+        custompks = list(user.custompks.all())
+        self.assertEqual(2, len(custompks))
+        self.assertEqual('key2', custompks[0].slug)
+        self.assertEqual('next-key', custompks[1].slug)
+        self.assertEqual(2, models.CustomPK.objects.count())
