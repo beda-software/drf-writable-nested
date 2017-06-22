@@ -1,3 +1,8 @@
+## 0.2.0
+* Add support for custom primary key field #10 (@tjwalch)
+* Add posibility to pass through argument from serializer.save method (@tjwalch)
+* Add posibility to update direct relations on create
+
 ## 0.1.4
 * Add support for GenericRelation (@tjwalch)
 

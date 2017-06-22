@@ -164,7 +164,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         save_kwargs = self.save_kwargs[field_name]
         if not isinstance(save_kwargs, dict):
             raise TypeError(
-                _("Arguments to nested serialiser's `save` must be dict's")
+                _("Arguments to nested serializer's `save` must be dict's")
             )
         return save_kwargs
 
