@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -69,128 +69,33 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         })
         return field.__class__(**kwargs)
 
-    def _get_save_kwargs(self, instance, related_field):
-        if related_field.many_to_many:
-            save_kwargs = {}
-        elif isinstance(related_field, GenericRelation):
-            save_kwargs = self._get_generic_lookup(instance, related_field)
-        else:
-            save_kwargs = {related_field.name: instance}
-        return save_kwargs
-
     def _get_generic_lookup(self, instance, related_field):
         return {
             related_field.content_type_field_name: ContentType.objects.get_for_model(instance),
             related_field.object_id_field_name: instance.pk,
         }
 
-
-class NestedCreateMixin(BaseNestedModelSerializer):
-    """
-    Mixin adds nested create feature
-    """
-    def create(self, validated_data):
-        relations, reverse_relations = self._extract_relations(validated_data)
-
-        # Create direct relations (foreign key, one-to-one)
-        for field_name, field in relations.items():
-            serializer = self._get_serializer_for_field(
-                field, data=self.initial_data[field_name])
-            serializer.is_valid(raise_exception=True)
-            validated_data[field.source] = serializer.save()
-
-        # Create instance
-        instance = super(NestedCreateMixin, self).create(validated_data)
-
-        if reverse_relations:
-            self.create_reverse_relations(instance, reverse_relations)
-
-        return instance
-
-    def create_reverse_relations(self, instance, reverse_relations):
-        # Create reverse relations
-        # many-to-one, many-to-many, reversed one-to-one
-        for field_name, (related_field, field) in reverse_relations.items():
-            save_kwargs = self._get_save_kwargs(instance, related_field)
-
-            related_data = self.initial_data[field_name]
-
-            # Expand to array of one item for one-to-one for uniformity
-            if related_field.one_to_one:
-                # Skip processing for empty data
-                if related_data is None:
-                    continue
-                related_data = [related_data]
-
-            # Create related instances
-            new_related_instances = []
-            for data in related_data:
-                serializer = self._get_serializer_for_field(
-                    field, data=data)
-                serializer.is_valid(raise_exception=True)
-                related_instance = serializer.save(**save_kwargs)
-                new_related_instances.append(related_instance)
-
-            if related_field.many_to_many:
-                # Add m2m instances to through model via add
-                m2m_manager = getattr(instance, field_name)
-                m2m_manager.add(*new_related_instances)
-
-
-class NestedUpdateMixin(BaseNestedModelSerializer):
-    """
-    Mixin adds update nested feature
-    """
-    default_error_messages = {
-        'cannot_delete_protected': _(
-            "Cannot delete {instances} because "
-            "protected relation exists")
-    }
-
     def prefetch_related_instances(self, field, related_data):
         model_class = field.Meta.model
-        instances = model_class.objects.filter(
-            pk__in=[
-                d.get('pk') for d in related_data
-                if d is not None and d.get('pk', None)
-            ]
-        )
+        pk_list = []
+        for d in filter(None, related_data):
+            pk = self._get_related_pk(d, model_class)
+            if pk:
+                pk_list.append(pk)
         instances = {
             related_instance.pk: related_instance
-            for related_instance in instances
+            for related_instance in model_class.objects.filter(
+                pk__in=pk_list,
+            )
         }
         return instances
 
-    def update(self, instance, validated_data):
-        relations, reverse_relations = self._extract_relations(validated_data)
+    def _get_related_pk(self, data, model_class):
+        return data.get('pk') or \
+               data.get(model_class._meta.pk.attname)
 
-        # Create or update direct relations (foreign key, one-to-one)
-        if relations:
-            for field_name, field in relations.items():
-                model_class = field.Meta.model
-                obj = model_class.objects.filter(
-                    pk=self.initial_data[field_name].get('pk')).first()
-                if obj:
-                    serializer = self._get_serializer_for_field(
-                        field, instance=obj,
-                        data=self.initial_data[field_name])
-                else:
-                    serializer = self._get_serializer_for_field(
-                        field, data=self.initial_data[field_name])
-                serializer.is_valid(raise_exception=True)
-                validated_data[field.source] = serializer.save()
-
-        # Update instance
-        instance = super(NestedUpdateMixin, self).update(
-            instance, validated_data)
-
-        if reverse_relations:
-            self.update_reverse_relations(instance, reverse_relations)
-            self.delete_reverse_relations_if_need(instance, reverse_relations)
-        return instance
-
-    def update_reverse_relations(self, instance, reverse_relations):
-        # Update reverse relations:
+    def update_or_create_reverse_relations(self, instance, reverse_relations):
+        # Update or create reverse relations:
         # many-to-one, many-to-many, reversed one-to-one
         for field_name, (related_field, field) in reverse_relations.items():
             related_data = self.initial_data[field_name]
@@ -203,30 +108,115 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
 
             instances = self.prefetch_related_instances(field, related_data)
 
-            save_kwargs = self._get_save_kwargs(instance, related_field)
+            save_kwargs = self.get_save_kwargs(field_name)
+            if isinstance(related_field, GenericRelation):
+                save_kwargs.update(
+                    self._get_generic_lookup(instance, related_field),
+                )
+            elif not related_field.many_to_many:
+                save_kwargs[related_field.name] = instance
 
             new_related_instances = []
             for data in related_data:
-                is_new = data.get('pk') is None
-                if is_new:
-                    serializer = self._get_serializer_for_field(
-                        field, data=data)
-                else:
-                    pk = data.get('pk')
-                    obj = instances[pk]
-                    serializer = self._get_serializer_for_field(
-                        field, instance=obj, data=data)
-
+                obj = instances.get(
+                    self._get_related_pk(data, field.Meta.model)
+                )
+                serializer = self._get_serializer_for_field(
+                    field,
+                    instance=obj,
+                    data=data,
+                )
                 serializer.is_valid(raise_exception=True)
                 related_instance = serializer.save(**save_kwargs)
-                if is_new:
-                    data['pk'] = related_instance.pk
-                    new_related_instances.append(related_instance)
+                data['pk'] = related_instance.pk
+                new_related_instances.append(related_instance)
 
             if related_field.many_to_many:
-                # Add m2m instances via add
+                # Add m2m instances to through model via add
                 m2m_manager = getattr(instance, field_name)
                 m2m_manager.add(*new_related_instances)
+
+    def update_or_create_direct_relations(self, attrs, relations):
+        for field_name, field in relations.items():
+            obj = None
+            data = self.initial_data[field_name]
+            model_class = field.Meta.model
+            pk = self._get_related_pk(data, model_class)
+            if pk:
+                obj = model_class.objects.filter(
+                    pk=pk,
+                ).first()
+            serializer = self._get_serializer_for_field(
+                field,
+                instance=obj,
+                data=data,
+            )
+            serializer.is_valid(raise_exception=True)
+            attrs[field.source] = serializer.save(
+                **self.get_save_kwargs(field_name)
+            )
+
+    def save(self, **kwargs):
+        self.save_kwargs = defaultdict(dict, kwargs)
+        return super(BaseNestedModelSerializer, self).save(**kwargs)
+
+    def get_save_kwargs(self, field_name):
+        save_kwargs = self.save_kwargs[field_name]
+        if not isinstance(save_kwargs, dict):
+            raise TypeError(
+                _("Arguments to nested serialiser's `save` must be dict's")
+            )
+        return save_kwargs
+
+
+class NestedCreateMixin(BaseNestedModelSerializer):
+    """
+    Mixin adds nested create feature
+    """
+    def create(self, validated_data):
+        relations, reverse_relations = self._extract_relations(validated_data)
+
+        # Create or update direct relations (foreign key, one-to-one)
+        self.update_or_create_direct_relations(
+            validated_data,
+            relations,
+        )
+
+        # Create instance
+        instance = super(NestedCreateMixin, self).create(validated_data)
+
+        self.update_or_create_reverse_relations(instance, reverse_relations)
+
+        return instance
+
+
+class NestedUpdateMixin(BaseNestedModelSerializer):
+    """
+    Mixin adds update nested feature
+    """
+    default_error_messages = {
+        'cannot_delete_protected': _(
+            "Cannot delete {instances} because "
+            "protected relation exists")
+    }
+
+    def update(self, instance, validated_data):
+        relations, reverse_relations = self._extract_relations(validated_data)
+
+        # Create or update direct relations (foreign key, one-to-one)
+        self.update_or_create_direct_relations(
+            validated_data,
+            relations,
+        )
+
+        # Update instance
+        instance = super(NestedUpdateMixin, self).update(
+            instance,
+            validated_data,
+        )
+        self.update_or_create_reverse_relations(instance, reverse_relations)
+        self.delete_reverse_relations_if_need(instance, reverse_relations)
+        return instance
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority

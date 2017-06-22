@@ -190,6 +190,26 @@ print(user_serializer.data)
 }
 ```
 
+It is also possible to pass through values to nested serializers from the call 
+to the base serializer's `save` method. These `kwargs` must be of type `dict`. E g:
+
+```python
+# user_serializer created with 'data' as above
+user = user_serializer.save(
+    profile={
+        'access_key': {'key': 'key2'},
+    },
+)
+print(user.profile.access_key.key)
+```
+
+```python
+'key2'
+```
+
+N b that the same value will be used for all nested instances.
+
+
 Authors
 =======
 2014-2017, beda.software

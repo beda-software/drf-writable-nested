@@ -83,3 +83,36 @@ class TaggedItemSerializer(WritableNestedModelSerializer):
         fields = (
             'tags',
         )
+
+
+class TeamSerializer(WritableNestedModelSerializer):
+    members = UserSerializer(many=True)
+
+    class Meta:
+        model = models.Team
+        fields = (
+            'members',
+            'name',
+        )
+
+
+class CustomPKSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.CustomPK
+        fields = (
+            'slug',
+        )
+
+
+class UserWithCustomPKSerializer(WritableNestedModelSerializer):
+    custompks = CustomPKSerializer(
+        many=True,
+    )
+
+    class Meta:
+        model = models.User
+        fields = (
+            'custompks',
+            'username',
+        )

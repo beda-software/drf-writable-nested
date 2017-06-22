@@ -1,7 +1,9 @@
 from django.test import TestCase
 
-from .models import Site, Avatar, User, Profile, AccessKey, Tag, TaggedItem
-from .serializers import UserSerializer, CustomSerializer, TaggedItemSerializer
+from . import (
+    models,
+    serializers,
+)
 
 
 class WritableNestedModelSerializerTest(TestCase):
@@ -32,7 +34,7 @@ class WritableNestedModelSerializerTest(TestCase):
         }
 
     def test_create(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
@@ -55,28 +57,28 @@ class WritableNestedModelSerializerTest(TestCase):
         )
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
     def test_create_with_not_specified_reverse_one_to_one(self):
-        serializer = UserSerializer(data={'username': 'test',})
+        serializer = serializers.UserSerializer(data={'username': 'test',})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        self.assertFalse(Profile.objects.filter(user=user).exists())
+        self.assertFalse(models.Profile.objects.filter(user=user).exists())
 
     def test_create_with_empty_reverse_one_to_one(self):
-        serializer = UserSerializer(data={'username': 'test', 'profile': None})
+        serializer = serializers.UserSerializer(data={'username': 'test', 'profile': None})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        self.assertFalse(Profile.objects.filter(user=user).exists())
+        self.assertFalse(models.Profile.objects.filter(user=user).exists())
 
     def test_create_with_custom_field(self):
         data = self.get_initial_data()
         data['custom_field'] = 'custom value'
-        serializer = CustomSerializer(data=data)
+        serializer = serializers.CustomSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertIsNotNone(user)
@@ -90,30 +92,30 @@ class WritableNestedModelSerializerTest(TestCase):
                 {'tag': next_tag},
             ],
         }
-        serializer = TaggedItemSerializer(data=data)
+        serializer = serializers.TaggedItemSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         item = serializer.save()
         self.assertIsNotNone(item)
-        self.assertEqual(2, Tag.objects.count())
+        self.assertEqual(2, models.Tag.objects.count())
         self.assertEqual(first_tag, item.tags.all()[0].tag)
         self.assertEqual(next_tag, item.tags.all()[1].tag)
 
     def test_update(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
 
         # Update
         user_pk = user.pk
         profile_pk = user.profile.pk
 
-        serializer = UserSerializer(
+        serializer = serializers.UserSerializer(
             instance=user,
             data={
                 'pk': user_pk,
@@ -165,20 +167,20 @@ class WritableNestedModelSerializerTest(TestCase):
         )
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 1)
-        self.assertEqual(Avatar.objects.count(), 3)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 1)
+        self.assertEqual(models.Avatar.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
     def test_update_with_empty_reverse_one_to_one(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertIsNotNone(user.profile)
 
-        serializer = UserSerializer(
+        serializer = serializers.UserSerializer(
             instance=user,
             data={
                 'pk': user.pk,
@@ -188,25 +190,25 @@ class WritableNestedModelSerializerTest(TestCase):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        self.assertFalse(Profile.objects.filter(user=user).exists())
+        self.assertFalse(models.Profile.objects.filter(user=user).exists())
 
     def test_partial_update(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
         # Partial update
         user_pk = user.pk
         profile_pk = user.profile.pk
 
-        serializer = UserSerializer(
+        serializer = serializers.UserSerializer(
             instance=user,
             partial=True,
             data={
@@ -238,30 +240,30 @@ class WritableNestedModelSerializerTest(TestCase):
         )
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
     def test_partial_update_direct_fk(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
         # Partial update
         user_pk = user.pk
         profile_pk = user.profile.pk
         access_key_pk = user.profile.access_key.pk
 
-        serializer = UserSerializer(
+        serializer = serializers.UserSerializer(
             instance=user,
             partial=True,
             data={
@@ -290,29 +292,29 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(access_key.pk, access_key_pk)
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
     def test_nested_partial_update(self):
-        serializer = UserSerializer(data=self.get_initial_data())
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
-        self.assertEqual(AccessKey.objects.count(), 1)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
 
         # Partial update
         user_pk = user.pk
         profile_pk = user.profile.pk
 
-        serializer = UserSerializer(
+        serializer = serializers.UserSerializer(
             instance=user,
             partial=True,
             data={
@@ -349,16 +351,16 @@ class WritableNestedModelSerializerTest(TestCase):
         )
 
         # Check instances count
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(Profile.objects.count(), 1)
-        self.assertEqual(Site.objects.count(), 2)
-        self.assertEqual(Avatar.objects.count(), 2)
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Profile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.Avatar.objects.count(), 2)
         # Old access key shouldn't be deleted
-        self.assertEqual(AccessKey.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 2)
 
     def test_update_with_generic_relation(self):
-        item = TaggedItem.objects.create()
-        serializer = TaggedItemSerializer(
+        item = models.TaggedItem.objects.create()
+        serializer = serializers.TaggedItemSerializer(
             instance=item,
             data={
                 'tags': [{
@@ -371,7 +373,7 @@ class WritableNestedModelSerializerTest(TestCase):
         item.refresh_from_db()
         self.assertEqual(1, item.tags.count())
 
-        serializer = TaggedItemSerializer(
+        serializer = serializers.TaggedItemSerializer(
             instance=item,
             data={
                 'tags': [{
@@ -385,7 +387,7 @@ class WritableNestedModelSerializerTest(TestCase):
         item.refresh_from_db()
         self.assertEqual('the_new_tag', item.tags.get().tag)
 
-        serializer = TaggedItemSerializer(
+        serializer = serializers.TaggedItemSerializer(
             instance=item,
             data={
                 'tags': [{
@@ -398,3 +400,115 @@ class WritableNestedModelSerializerTest(TestCase):
         item.refresh_from_db()
         self.assertEqual(1, item.tags.count())
         self.assertEqual('the_third_tag', item.tags.get().tag)
+
+    def test_create_m2m_with_existing_related_objects(self):
+        users = [
+            models.User.objects.create(username='user one'),
+            models.User.objects.create(username='user two'),
+        ]
+        user_data = serializers.UserSerializer(
+            users,
+            many=True
+        ).data
+        user_data.append({'username': 'user three'})
+        user_data[0]['username'] = 'first user'
+        data = {
+            'name': 'Team Test',
+            'members': user_data,
+        }
+        serializer = serializers.TeamSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        team = serializer.save()
+        self.assertEqual(3, team.members.count())
+        self.assertEqual(3, models.User.objects.count())
+        self.assertEqual('first user', team.members.first().username)
+
+        #update
+        data = serializers.TeamSerializer(team).data
+        data['members'].append({'username': 'last user'})
+        serializer = serializers.TeamSerializer(team, data=data)
+        self.assertTrue(serializer.is_valid())
+        team = serializer.save()
+        self.assertEqual(4, team.members.count())
+        self.assertEqual(4, models.User.objects.count())
+        self.assertEqual('last user', team.members.last().username)
+
+    def test_create_fk_with_existing_related_object(self):
+        user = models.User.objects.create(username='user one')
+        profile = models.Profile.objects.create(user=user)
+        avatar = models.Avatar.objects.create(profile=profile)
+        data = self.get_initial_data()
+        data['profile']['avatars'][0]['pk'] = avatar.pk
+        serializer = serializers.UserSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        new_user = serializer.save()
+        self.assertEqual(2, models.Avatar.objects.count())
+        avatar.refresh_from_db()
+        self.assertEqual('image-1.png', avatar.image)
+        self.assertNotEqual(new_user.profile, profile)
+        self.assertEqual(new_user.profile, avatar.profile)
+
+    def test_create_with_existing_direct_fk_object(self):
+        access_key = models.AccessKey.objects.create(
+            key='the-key',
+        )
+        serializer = serializers.AccessKeySerializer(
+            instance=access_key,
+        )
+        data = self.get_initial_data()
+        data['profile']['access_key'] = serializer.data
+        data['profile']['access_key']['key'] = 'new-key'
+        serializer = serializers.UserSerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        access_key.refresh_from_db()
+        self.assertEqual(access_key, user.profile.access_key)
+        self.assertEqual('new-key', access_key.key)
+
+    def test_create_with_save_kwargs(self):
+        data = self.get_initial_data()
+        serializer = serializers.UserSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save(
+            profile={
+                'access_key': {'key': 'key2'},
+                'sites': {'url': 'http://test.com'}
+            },
+        )
+        self.assertEqual('key2', user.profile.access_key.key)
+        sites = list(user.profile.sites.all())
+        self.assertEqual('http://test.com', sites[0].url)
+        self.assertEqual('http://test.com', sites[1].url)
+
+    def test_custom_pk(self):
+        data = {
+            'username': 'username',
+            'custompks': [{
+                'slug': 'custom-key',
+            }]
+        }
+        serializer = serializers.UserWithCustomPKSerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        self.assertEqual('custom-key',
+                         user.custompks.first().slug)
+        data['custompks'].append({
+            'slug': 'next-key',
+        })
+        data['custompks'][0]['slug'] = 'key2'
+        serializer = serializers.UserWithCustomPKSerializer(
+            data=data,
+            instance=user,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        user.refresh_from_db()
+        custompks = list(user.custompks.all())
+        self.assertEqual(2, len(custompks))
+        self.assertEqual('key2', custompks[0].slug)
+        self.assertEqual('next-key', custompks[1].slug)
+        self.assertEqual(2, models.CustomPK.objects.count())

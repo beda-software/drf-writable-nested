@@ -38,3 +38,19 @@ class Tag(models.Model):
 
 class TaggedItem(models.Model):
     tags = GenericRelation(Tag)
+
+
+class Team(models.Model):
+    name = models.CharField(max_length=100)
+    members = models.ManyToManyField(User)
+
+
+class CustomPK(models.Model):
+    slug = models.SlugField(
+        primary_key=True,
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='custompks',
+    )
