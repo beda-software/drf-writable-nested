@@ -207,9 +207,11 @@ print(user.profile.access_key.key)
 'key2'
 ```
 
-N b that the same value will be used for all nested instances.
+Note: The same value will be used for all nested instances like default value but with higher priority.
+
 
 
 Authors
 =======
 2014-2017, beda.software
+
