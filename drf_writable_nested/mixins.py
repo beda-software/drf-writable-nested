@@ -232,7 +232,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             if related_field.one_to_one:
                 related_data = [related_data]
 
-            # M2M relation can be as direct as reverse. For direct relation we
+            # M2M relation can be as direct or as reverse. For direct relation we
             # should use reverse relation name
             if related_field.many_to_many and \
                     not isinstance(related_field, ForeignObjectRel):
@@ -257,12 +257,11 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 )
 
                 if related_field.many_to_many:
-                    # Remove relations from m2m table before deleting
-                    # It is necessary for correct m2m_changes signal handling
+                    # Remove relations from m2m table
                     m2m_manager = getattr(instance, field_name)
                     m2m_manager.remove(*pks_to_delete)
-
-                model_class.objects.filter(pk__in=pks_to_delete).delete()
+                else:
+                    model_class.objects.filter(pk__in=pks_to_delete).delete()
 
             except ProtectedError as e:
                 instances = e.args[1]

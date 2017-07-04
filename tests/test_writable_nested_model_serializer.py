@@ -169,10 +169,11 @@ class WritableNestedModelSerializerTest(TestCase):
         # Check instances count
         self.assertEqual(models.User.objects.count(), 1)
         self.assertEqual(models.Profile.objects.count(), 1)
-        self.assertEqual(models.Site.objects.count(), 1)
         self.assertEqual(models.Avatar.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
         self.assertEqual(models.AccessKey.objects.count(), 1)
+        # Sites shouldn't be deleted either as it is M2M
+        self.assertEqual(models.Site.objects.count(), 3)
 
     def test_update_with_empty_reverse_one_to_one(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
