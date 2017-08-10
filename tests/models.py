@@ -9,6 +9,11 @@ class Site(models.Model):
 
 class User(models.Model):
     username = models.CharField(max_length=100)
+    user_avatar = models.ForeignKey(
+        'Avatar',
+        null=True,
+        on_delete=models.PROTECT
+    )
 
 
 class AccessKey(models.Model):
@@ -23,7 +28,7 @@ class Profile(models.Model):
 
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='avatars')
+    profile = models.ForeignKey(Profile, related_name='avatars',)
 
 
 class Tag(models.Model):
