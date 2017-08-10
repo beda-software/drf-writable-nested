@@ -9,6 +9,7 @@ class Site(models.Model):
 
 class User(models.Model):
     username = models.CharField(max_length=100)
+    user_avatar = models.ForeignKey('Avatar', null=True)
 
 
 class AccessKey(models.Model):
@@ -21,9 +22,26 @@ class Profile(models.Model):
     access_key = models.ForeignKey(AccessKey, null=True)
 
 
+class AvatarQuerySet(models.QuerySet):
+    def delete(self):
+        for obj in self:
+            if User.objects.filter(user_avatar=obj).exists():
+                raise models.deletion.ProtectedError(
+                    'You are trying to delete avatar which is used in as user'
+                    'avatar',
+                    protected_objects=[obj]
+                )
+            obj.delete()
+
+
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='avatars')
+    profile = models.ForeignKey(
+        Profile,
+        related_name='avatars',
+    )
+
+    objects = AvatarQuerySet.as_manager()
 
 
 class Tag(models.Model):
