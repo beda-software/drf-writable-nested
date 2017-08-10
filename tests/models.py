@@ -1,3 +1,4 @@
+import uuid
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -59,3 +60,13 @@ class CustomPK(models.Model):
         on_delete=models.CASCADE,
         related_name='custompks',
     )
+
+
+class Message(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    profile = models.ForeignKey(Profile, related_name='messages')
+    message = models.CharField(max_length=100)

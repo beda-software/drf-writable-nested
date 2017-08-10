@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import uuid
 from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
@@ -82,12 +83,11 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             pk = self._get_related_pk(d, model_class)
             if pk:
                 pk_list.append(pk)
-        instances = {
-            related_instance.pk: related_instance
-            for related_instance in model_class.objects.filter(
-                pk__in=pk_list,
-            )
-        }
+        instances = {}
+        for related_instance in model_class.objects.filter(pk__in=pk_list,):
+            if isinstance(related_instance.pk, uuid.UUID):
+                instances[str(related_instance.pk)] = related_instance
+            instances[related_instance.pk] = related_instance
         return instances
 
     def _get_related_pk(self, data, model_class):

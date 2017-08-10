@@ -1,3 +1,6 @@
+## 0.2.2
+* Fix problem for updating models with UUID primary key field (@kseniyashaydurova)
+
 ## 0.2.1
 * Fix problem with raising Protected Error in deletion (@kseniyashaydurova)
 
