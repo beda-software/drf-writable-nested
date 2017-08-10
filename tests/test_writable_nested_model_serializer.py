@@ -1,3 +1,4 @@
+import uuid
 from django.test import TestCase
 
 from . import (
@@ -30,6 +31,17 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'image-2.png',
                     },
                 ],
+                'messages': [
+                    {
+                        'message': 'Message 1'
+                    },
+                    {
+                        'message': 'Message 2'
+                    },
+                    {
+                        'message': 'Message 3'
+                    },
+                ]
             },
         }
 
@@ -110,11 +122,14 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(models.Profile.objects.count(), 1)
         self.assertEqual(models.Site.objects.count(), 2)
         self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertEqual(models.Message.objects.count(), 3)
 
         # Update
         user_pk = user.pk
         profile_pk = user.profile.pk
 
+        message_to_update_str_pk = str(user.profile.messages.first().pk)
+        message_to_update_pk = user.profile.messages.last().pk
         serializer = serializers.UserSerializer(
             instance=user,
             data={
@@ -139,6 +154,19 @@ class WritableNestedModelSerializerTest(TestCase):
                         {
                             'image': 'new-image-2.png',
                         },
+                    ],
+                    'messages': [
+                        {
+                            'pk': message_to_update_str_pk,
+                            'message': 'Old message 1'
+                        },
+                        {
+                            'pk': message_to_update_pk,
+                            'message': 'Old message 2'
+                        },
+                        {
+                            'message': 'New message 1'
+                        }
                     ],
                 },
             },
@@ -165,12 +193,27 @@ class WritableNestedModelSerializerTest(TestCase):
             set(profile.avatars.values_list('image', flat=True)),
             {'old-image-1.png', 'new-image-1.png', 'new-image-2.png'}
         )
+        self.assertSetEqual(
+            set(profile.messages.values_list('message', flat=True)),
+            {'Old message 1', 'Old message 2', 'New message 1'}
+        )
+        # Check that message which supposed to be updated still in profile
+        # messages (new message wasn't created instead of update)
+        self.assertIn(
+            message_to_update_pk,
+            profile.messages.values_list('id', flat=True)
+        )
+        self.assertIn(
+            uuid.UUID(message_to_update_str_pk),
+            profile.messages.values_list('id', flat=True)
+        )
 
         # Check instances count
         self.assertEqual(models.User.objects.count(), 1)
         self.assertEqual(models.Profile.objects.count(), 1)
         self.assertEqual(models.Site.objects.count(), 1)
         self.assertEqual(models.Avatar.objects.count(), 3)
+        self.assertEqual(models.Message.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
         self.assertEqual(models.AccessKey.objects.count(), 1)
 

@@ -12,6 +12,13 @@ class AvatarSerializer(serializers.ModelSerializer):
         fields = ('pk', 'image',)
 
 
+class MessageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.Message
+        fields = ('pk', 'message',)
+
+
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
@@ -37,9 +44,12 @@ class ProfileSerializer(WritableNestedModelSerializer):
     # Direct FK relation
     access_key = AccessKeySerializer(allow_null=True)
 
+    # Reverse FK relation with UUID
+    messages = MessageSerializer(many=True)
+
     class Meta:
         model = models.Profile
-        fields = ('pk', 'sites', 'avatars', 'access_key',)
+        fields = ('pk', 'sites', 'avatars', 'access_key', 'messages',)
 
 
 class UserSerializer(WritableNestedModelSerializer):
