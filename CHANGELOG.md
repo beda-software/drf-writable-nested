@@ -1,3 +1,6 @@
+## 0.2.1
+* Fix problem with raising Protected Error in deletion (@kseniyashaydurova)
+
 ## 0.2.0
 * Add support for custom primary key field #10 (@tjwalch)
 * Add possibility to pass through argument from serializer.save method (@tjwalch)
