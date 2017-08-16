@@ -1,4 +1,5 @@
 import uuid
+from rest_framework.exceptions import ValidationError
 from django.test import TestCase
 
 from . import (
@@ -216,6 +217,38 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(models.Message.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
         self.assertEqual(models.AccessKey.objects.count(), 1)
+
+    def test_update_raise_protected_error(self):
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        user.user_avatar = user.profile.avatars.first()
+        user.save()
+
+        serializer = serializers.ProfileSerializer(
+            instance=user.profile,
+            data={
+                'access_key': None,
+                'sites': [],
+                'avatars': [
+                    {
+                        'pk': user.profile.avatars.last().id,
+                        'image': 'old-image-1.png',
+                    },
+                    {
+                        'image': 'new-image-1.png',
+                    },
+                ],
+            }
+        )
+
+        serializer.is_valid(raise_exception=True)
+        with self.assertRaises(ValidationError):
+            serializer.save()
+
+        # Check that protected avatar haven't been deleted
+        self.assertEqual(models.Avatar.objects.count(), 3)
 
     def test_update_with_empty_reverse_one_to_one(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())

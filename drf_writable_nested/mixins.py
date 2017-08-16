@@ -267,4 +267,4 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             except ProtectedError as e:
                 instances = e.args[1]
                 self.fail('cannot_delete_protected', instances=", ".join([
-                    instance for instance in instances]))
+                    str(instance) for instance in instances]))
