@@ -72,7 +72,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
     def _get_generic_lookup(self, instance, related_field):
         return {
-            related_field.content_type_field_name: ContentType.objects.get_for_model(instance),
+            related_field.content_type_field_name: 
+                ContentType.objects.get_for_model(instance),
             related_field.object_id_field_name: instance.pk,
         }
 
@@ -83,16 +84,23 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             pk = self._get_related_pk(d, model_class)
             if pk:
                 pk_list.append(pk)
-        instances = {}
-        for related_instance in model_class.objects.filter(pk__in=pk_list,):
-            if isinstance(related_instance.pk, uuid.UUID):
-                instances[str(related_instance.pk)] = related_instance
-            instances[related_instance.pk] = related_instance
+
+        instances = {
+            str(related_instance.pk): related_instance
+            for related_instance in model_class.objects.filter(
+                pk__in=pk_list
+            )
+        }
+
         return instances
 
     def _get_related_pk(self, data, model_class):
-        return data.get('pk') or \
-               data.get(model_class._meta.pk.attname)
+        pk = data.get('pk') or data.get(model_class._meta.pk.attname)
+
+        if pk:
+            return str(pk)
+
+        return None
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
@@ -158,6 +166,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         self.save_kwargs = defaultdict(dict, kwargs)
+
         return super(BaseNestedModelSerializer, self).save(**kwargs)
 
     def get_save_kwargs(self, field_name):
@@ -166,6 +175,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             raise TypeError(
                 _("Arguments to nested serializer's `save` must be dict's")
             )
+
         return save_kwargs
 
 
@@ -240,7 +250,8 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     related_field.rel.name: instance,
                 }
             elif isinstance(related_field, GenericRelation):
-                related_field_lookup = self._get_generic_lookup(instance, related_field)
+                related_field_lookup = \
+                    self._get_generic_lookup(instance, related_field)
             else:
                 related_field_lookup = {
                     related_field.name: instance,
