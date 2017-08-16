@@ -240,6 +240,7 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'new-image-1.png',
                     },
                 ],
+                'messages': [],
             }
         )
 
