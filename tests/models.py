@@ -68,5 +68,5 @@ class Message(models.Model):
         default=uuid.uuid4,
         editable=False
     )
-    profile = models.ForeignKey(Profile, related_name='messages')
+    profile = models.ForeignKey(Profile)
     message = models.CharField(max_length=100)

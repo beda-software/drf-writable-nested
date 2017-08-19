@@ -58,7 +58,16 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _get_related_field(self, field):
         model_class = self.Meta.model
 
-        related_field = model_class._meta.get_field(field.source)
+        try:
+            related_field = model_class._meta.get_field(field.source)
+        except FieldDoesNotExist:
+            # If `related_name` is not set, field name does not include `_set` -> remove it and check again
+            default_postfix = '_set'
+            if field.source.endswith(default_postfix):
+                related_field = model_class._meta.get_field(field.source[:-len(default_postfix)])
+            else:
+                raise
+
         if isinstance(related_field, ForeignObjectRel):
             return related_field.field, False
         return related_field, True
