@@ -70,3 +70,14 @@ class Message(models.Model):
     )
     profile = models.ForeignKey(Profile, related_name='messages')
     message = models.CharField(max_length=100)
+
+
+class AnotherProfile(models.Model):
+    sites = models.ManyToManyField(Site)
+    user = models.OneToOneField(User)
+    access_key = models.ForeignKey(AccessKey, null=True)
+
+
+class AnotherAvatar(models.Model):
+    image = models.CharField(max_length=100)
+    profile = models.ForeignKey(AnotherProfile, related_name='avatars',)

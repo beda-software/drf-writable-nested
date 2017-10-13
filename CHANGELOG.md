@@ -1,3 +1,6 @@
+## 0.3.1
+* Fix problem with different field name specified via `source` attribute #22
+
 ## 0.3.0
 * Fix problem with deletion related M2M objects when removing the relation
 (Note: you should manually delete m2m instances on update after this version)
