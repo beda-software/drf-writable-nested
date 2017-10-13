@@ -3,6 +3,7 @@ language: python
 python:
     - "2.7"
     - "3.5"
+    - "3.6"
 
 sudo: false
 
@@ -10,6 +11,8 @@ env:
     - DJANGO=1.8
     - DJANGO=1.9
     - DJANGO=1.10
+    - DJANGO=1.11
+    - DJANGO=2.0
 
 install:
     - pip install tox tox-travis
