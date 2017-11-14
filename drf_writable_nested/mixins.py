@@ -115,6 +115,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 if related_data is None:
                     # Skip processing for empty data
                     continue
+                pk_name = field.Meta.model._meta.pk.attname
+                if pk_name not in related_data:
+                    related_data[pk_name] = instance.pk
                 related_data = [related_data]
 
             instances = self.prefetch_related_instances(field, related_data)
