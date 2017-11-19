@@ -71,8 +71,7 @@ class Message(models.Model):
         default=uuid.uuid4,
         editable=False
     )
-    profile = models.ForeignKey(
-        Profile, on_delete=models.CASCADE, related_name='messages')
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     message = models.CharField(max_length=100)
 
 

@@ -45,11 +45,11 @@ class ProfileSerializer(WritableNestedModelSerializer):
     access_key = AccessKeySerializer(allow_null=True)
 
     # Reverse FK relation with UUID
-    messages = MessageSerializer(many=True)
+    message_set = MessageSerializer(many=True)
 
     class Meta:
         model = models.Profile
-        fields = ('pk', 'sites', 'avatars', 'access_key', 'messages',)
+        fields = ('pk', 'sites', 'avatars', 'access_key', 'message_set',)
 
 
 class UserSerializer(WritableNestedModelSerializer):

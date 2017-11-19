@@ -32,7 +32,7 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'image-2.png',
                     },
                 ],
-                'messages': [
+                'message_set': [
                     {
                         'message': 'Message 1'
                     },
@@ -129,8 +129,8 @@ class WritableNestedModelSerializerTest(TestCase):
         user_pk = user.pk
         profile_pk = user.profile.pk
 
-        message_to_update_str_pk = str(user.profile.messages.first().pk)
-        message_to_update_pk = user.profile.messages.last().pk
+        message_to_update_str_pk = str(user.profile.message_set.first().pk)
+        message_to_update_pk = user.profile.message_set.last().pk
         serializer = serializers.UserSerializer(
             instance=user,
             data={
@@ -156,7 +156,7 @@ class WritableNestedModelSerializerTest(TestCase):
                             'image': 'new-image-2.png',
                         },
                     ],
-                    'messages': [
+                    'message_set': [
                         {
                             'pk': message_to_update_str_pk,
                             'message': 'Old message 1'
@@ -195,18 +195,18 @@ class WritableNestedModelSerializerTest(TestCase):
             {'old-image-1.png', 'new-image-1.png', 'new-image-2.png'}
         )
         self.assertSetEqual(
-            set(profile.messages.values_list('message', flat=True)),
+            set(profile.message_set.values_list('message', flat=True)),
             {'Old message 1', 'Old message 2', 'New message 1'}
         )
         # Check that message which supposed to be updated still in profile
-        # messages (new message wasn't created instead of update)
+        # message_set (new message wasn't created instead of update)
         self.assertIn(
             message_to_update_pk,
-            profile.messages.values_list('id', flat=True)
+            profile.message_set.values_list('id', flat=True)
         )
         self.assertIn(
             uuid.UUID(message_to_update_str_pk),
-            profile.messages.values_list('id', flat=True)
+            profile.message_set.values_list('id', flat=True)
         )
 
         # Check instances count
@@ -241,7 +241,7 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'new-image-1.png',
                     },
                 ],
-                'messages': [],
+                'message_set': [],
             }
         )
 
