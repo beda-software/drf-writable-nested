@@ -1,3 +1,6 @@
+## 0.3.2
+* Support relation fields that do not have `related_name` specified #24 (@jpnauta)
+
 ## 0.3.1
 * Fix problem with different field name specified via `source` attribute #22
 
