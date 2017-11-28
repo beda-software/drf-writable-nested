@@ -1,6 +1,7 @@
 import uuid
 from rest_framework.exceptions import ValidationError
 from django.test import TestCase
+from django.http.request import QueryDict
 
 from . import (
     models,
@@ -715,3 +716,16 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(models.AccessKey.objects.count(), 1)
         # Sites shouldn't be deleted either as it is M2M
         self.assertEqual(models.Site.objects.count(), 3)
+
+    def test_create_with_html_input_data(self):
+        """Serializer should not fail if request type is multipart
+        """
+        # DRF sets data to `QueryDuct` when request type is `multipart`
+        data = QueryDict('name=team')
+        serializer = serializers.TeamSerializer(
+            data=data
+        )
+        serializer.is_valid(raise_exception=True)
+        team = serializer.save()
+
+        self.assertTrue(models.Team.objects.filter(id=team.id).exists())
