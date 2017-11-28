@@ -45,11 +45,11 @@ class ProfileSerializer(WritableNestedModelSerializer):
     access_key = AccessKeySerializer(allow_null=True)
 
     # Reverse FK relation with UUID
-    messages = MessageSerializer(many=True)
+    message_set = MessageSerializer(many=True)
 
     class Meta:
         model = models.Profile
-        fields = ('pk', 'sites', 'avatars', 'access_key', 'messages',)
+        fields = ('pk', 'sites', 'avatars', 'access_key', 'message_set',)
 
 
 class UserSerializer(WritableNestedModelSerializer):
@@ -107,7 +107,6 @@ class TeamSerializer(WritableNestedModelSerializer):
 
 
 class CustomPKSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.CustomPK
         fields = (
@@ -126,3 +125,38 @@ class UserWithCustomPKSerializer(WritableNestedModelSerializer):
             'custompks',
             'username',
         )
+
+
+class AnotherAvatarSerializer(serializers.ModelSerializer):
+    image = serializers.CharField()
+
+    class Meta:
+        model = models.AnotherAvatar
+        fields = ('pk', 'image',)
+
+
+class AnotherProfileSerializer(WritableNestedModelSerializer):
+    # Direct ManyToMany relation
+    another_sites = SiteSerializer(source='sites', many=True)
+
+    # Reverse FK relation
+    another_avatars = AnotherAvatarSerializer(source='avatars', many=True)
+
+    # Direct FK relation
+    another_access_key = AccessKeySerializer(
+        source='access_key', allow_null=True)
+
+    class Meta:
+        model = models.AnotherProfile
+        fields = ('pk', 'another_sites', 'another_avatars',
+                  'another_access_key',)
+
+
+class AnotherUserSerializer(WritableNestedModelSerializer):
+    # Reverse OneToOne relation
+    another_profile = AnotherProfileSerializer(
+        source='anotherprofile', required=False, allow_null=True)
+
+    class Meta:
+        model = models.User
+        fields = ('pk', 'another_profile', 'username',)

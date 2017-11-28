@@ -23,13 +23,16 @@ class AccessKey(models.Model):
 
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
-    user = models.OneToOneField(User)
-    access_key = models.ForeignKey(AccessKey, null=True)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE)
+    access_key = models.ForeignKey(
+        AccessKey, on_delete=models.CASCADE, null=True)
 
 
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='avatars',)
+    profile = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, related_name='avatars',)
 
 
 class Tag(models.Model):
@@ -68,5 +71,18 @@ class Message(models.Model):
         default=uuid.uuid4,
         editable=False
     )
-    profile = models.ForeignKey(Profile, related_name='messages')
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     message = models.CharField(max_length=100)
+
+
+class AnotherProfile(models.Model):
+    sites = models.ManyToManyField(Site)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    access_key = models.ForeignKey(
+        AccessKey, on_delete=models.CASCADE, null=True)
+
+
+class AnotherAvatar(models.Model):
+    image = models.CharField(max_length=100)
+    profile = models.ForeignKey(
+        AnotherProfile, on_delete=models.CASCADE, related_name='avatars',)

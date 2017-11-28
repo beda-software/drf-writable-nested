@@ -5,7 +5,7 @@ DRF Writable Nested
 [![pypi](https://img.shields.io/pypi/v/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 
 This is a writable nested model serializer for Django REST Framework which
-allows you to create/update your models with related nested data. 
+allows you to create/update your models with related nested data.
 
 The following relations are supported:
 - OneToOne (direct/reverse)
@@ -16,9 +16,9 @@ The following relations are supported:
 Requirements
 ============
 
-- Python (2.7, 3.2, 3.3, 3.4, 3.5)
-- Django (1.8, 1.9, 1.10)
-- djangorestframework (3.x)
+- Python (2.7, 3.5, 3.6)
+- Django (1.8, 1.9, 1.10, 1.11)
+- djangorestframework (3.5+)
 
 Installation
 ============
@@ -41,18 +41,18 @@ class Site(models.Model):
 
 class User(models.Model):
     username = models.CharField(max_length=100)
-    
-    
+
+
 class AccessKey(models.Model):
     key = models.CharField(max_length=100)
-    
+
 
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
     user = models.OneToOneField(User)
     access_key = models.ForeignKey(AccessKey, null=True)
-    
-    
+
+
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(Profile, related_name='avatars')
@@ -82,7 +82,7 @@ class SiteSerializer(serializers.ModelSerializer):
 
 
 class AccessKeySerializer(serializers.ModelSerializer):
-    
+
     class Meta:
         model = AccessKey
         fields = ('pk', 'key',)
@@ -91,13 +91,13 @@ class AccessKeySerializer(serializers.ModelSerializer):
 class ProfileSerializer(WritableNestedModelSerializer):
     # Direct ManyToMany relation
     sites = SiteSerializer(many=True)
-    
+
     # Reverse FK relation
     avatars = AvatarSerializer(many=True)
-    
+
     # Direct FK relation
     access_key = AccessKeySerializer(allow_null=True)
-    
+
     class Meta:
         model = Profile
         fields = ('pk', 'sites', 'avatars', 'access_key',)
@@ -130,7 +130,7 @@ data = {
                 'url': 'http://google.com',
             },
             {
-                'url': 'http://yahoo.com',   
+                'url': 'http://yahoo.com',
             },
         ],
         'avatars': [
@@ -139,7 +139,7 @@ data = {
             },
             {
                 'image': 'image-2.png',
-            },  
+            },
         ],
     },
 }
@@ -149,7 +149,7 @@ user_serializer.is_valid(raise_exception=True)
 user = user_serializer.save()
 ```
 
-This serializer will automatically create all nested relations and we receive a 
+This serializer will automatically create all nested relations and we receive a
 complete instance with filled data.
 ```python
 user_serializer = UserSerializer(instance=user)
@@ -190,7 +190,7 @@ print(user_serializer.data)
 }
 ```
 
-It is also possible to pass through values to nested serializers from the call 
+It is also possible to pass through values to nested serializers from the call
 to the base serializer's `save` method. These `kwargs` must be of type `dict`. E g:
 
 ```python

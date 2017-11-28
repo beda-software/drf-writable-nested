@@ -32,7 +32,7 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'image-2.png',
                     },
                 ],
-                'messages': [
+                'message_set': [
                     {
                         'message': 'Message 1'
                     },
@@ -129,8 +129,8 @@ class WritableNestedModelSerializerTest(TestCase):
         user_pk = user.pk
         profile_pk = user.profile.pk
 
-        message_to_update_str_pk = str(user.profile.messages.first().pk)
-        message_to_update_pk = user.profile.messages.last().pk
+        message_to_update_str_pk = str(user.profile.message_set.first().pk)
+        message_to_update_pk = user.profile.message_set.last().pk
         serializer = serializers.UserSerializer(
             instance=user,
             data={
@@ -156,7 +156,7 @@ class WritableNestedModelSerializerTest(TestCase):
                             'image': 'new-image-2.png',
                         },
                     ],
-                    'messages': [
+                    'message_set': [
                         {
                             'pk': message_to_update_str_pk,
                             'message': 'Old message 1'
@@ -195,28 +195,29 @@ class WritableNestedModelSerializerTest(TestCase):
             {'old-image-1.png', 'new-image-1.png', 'new-image-2.png'}
         )
         self.assertSetEqual(
-            set(profile.messages.values_list('message', flat=True)),
+            set(profile.message_set.values_list('message', flat=True)),
             {'Old message 1', 'Old message 2', 'New message 1'}
         )
         # Check that message which supposed to be updated still in profile
-        # messages (new message wasn't created instead of update)
+        # message_set (new message wasn't created instead of update)
         self.assertIn(
             message_to_update_pk,
-            profile.messages.values_list('id', flat=True)
+            profile.message_set.values_list('id', flat=True)
         )
         self.assertIn(
             uuid.UUID(message_to_update_str_pk),
-            profile.messages.values_list('id', flat=True)
+            profile.message_set.values_list('id', flat=True)
         )
 
         # Check instances count
         self.assertEqual(models.User.objects.count(), 1)
         self.assertEqual(models.Profile.objects.count(), 1)
-        self.assertEqual(models.Site.objects.count(), 1)
         self.assertEqual(models.Avatar.objects.count(), 3)
         self.assertEqual(models.Message.objects.count(), 3)
         # Access key shouldn't be removed because it is FK
         self.assertEqual(models.AccessKey.objects.count(), 1)
+        # Sites shouldn't be deleted either as it is M2M
+        self.assertEqual(models.Site.objects.count(), 3)
 
     def test_update_raise_protected_error(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
@@ -240,7 +241,7 @@ class WritableNestedModelSerializerTest(TestCase):
                         'image': 'new-image-1.png',
                     },
                 ],
-                'messages': []
+                'message_set': [],
             }
         )
 
@@ -589,3 +590,128 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual('key2', custompks[0].slug)
         self.assertEqual('next-key', custompks[1].slug)
         self.assertEqual(2, models.CustomPK.objects.count())
+
+    def get_another_initial_data(self):
+        return {
+            'username': 'test',
+            'another_profile': {
+                'another_access_key': {
+                    'key': 'key',
+                },
+                'another_sites': [
+                    {
+                        'url': 'http://google.com',
+                    },
+                    {
+                        'url': 'http://yahoo.com',
+                    },
+                ],
+                'another_avatars': [
+                    {
+                        'image': 'image-1.png',
+                    },
+                    {
+                        'image': 'image-2.png',
+                    },
+                ],
+            },
+        }
+
+    def test_create_another_user_with_explicit_source(self):
+        serializer = serializers.AnotherUserSerializer(
+            data=self.get_another_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.username, 'test')
+
+        profile = user.anotherprofile
+        self.assertIsNotNone(profile)
+        self.assertIsNotNone(profile.access_key)
+        self.assertEqual(profile.access_key.key, 'key')
+        self.assertEqual(profile.sites.count(), 2)
+        self.assertSetEqual(
+            set(profile.sites.values_list('url', flat=True)),
+            {'http://google.com', 'http://yahoo.com'}
+        )
+        self.assertEqual(profile.avatars.count(), 2)
+        self.assertSetEqual(
+            set(profile.avatars.values_list('image', flat=True)),
+            {'image-1.png', 'image-2.png'}
+        )
+        # Check instances count
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.AnotherProfile.objects.count(), 1)
+        self.assertEqual(models.Site.objects.count(), 2)
+        self.assertEqual(models.AnotherAvatar.objects.count(), 2)
+        self.assertEqual(models.AccessKey.objects.count(), 1)
+
+    def test_update_another_user_with_explicit_source(self):
+        serializer = serializers.AnotherUserSerializer(
+            data=self.get_another_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Update
+        user_pk = user.pk
+        profile_pk = user.anotherprofile.pk
+
+        serializer = serializers.AnotherUserSerializer(
+            instance=user,
+            data={
+                'pk': user_pk,
+                'username': 'new',
+                'another_profile': {
+                    'pk': profile_pk,
+                    'another_access_key': None,
+                    'another_sites': [
+                        {
+                            'url': 'http://new-site.com',
+                        },
+                    ],
+                    'another_avatars': [
+                        {
+                            'pk': user.anotherprofile.avatars.earliest('pk').pk,
+                            'image': 'old-image-1.png',
+                        },
+                        {
+                            'image': 'new-image-1.png',
+                        },
+                        {
+                            'image': 'new-image-2.png',
+                        },
+                    ],
+                },
+            },
+        )
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        user.refresh_from_db()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.pk, user_pk)
+        self.assertEqual(user.username, 'new')
+
+        profile = user.anotherprofile
+        self.assertIsNotNone(profile)
+        self.assertIsNone(profile.access_key)
+        self.assertEqual(profile.pk, profile_pk)
+        self.assertEqual(profile.sites.count(), 1)
+        self.assertSetEqual(
+            set(profile.sites.values_list('url', flat=True)),
+            {'http://new-site.com'}
+        )
+        self.assertEqual(profile.avatars.count(), 3)
+        self.assertSetEqual(
+            set(profile.avatars.values_list('image', flat=True)),
+            {'old-image-1.png', 'new-image-1.png', 'new-image-2.png'}
+        )
+
+        # Check instances count
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.AnotherProfile.objects.count(), 1)
+        self.assertEqual(models.AnotherAvatar.objects.count(), 3)
+        # Access key shouldn't be removed because it is FK
+        self.assertEqual(models.AccessKey.objects.count(), 1)
+        # Sites shouldn't be deleted either as it is M2M
+        self.assertEqual(models.Site.objects.count(), 3)
