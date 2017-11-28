@@ -118,7 +118,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         # many-to-one, many-to-many, reversed one-to-one
         for field_name, (related_field, field, field_source) in \
                 reverse_relations.items():
-            related_data = self.initial_data[field_name]
+            related_data = self.initial_data.get(field_name)
+            if not related_data:
+                continue
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
                 if related_data is None:
