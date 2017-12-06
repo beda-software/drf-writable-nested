@@ -158,7 +158,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             id_value = match.kwargs[lookup_field_name]
 
         # getting the actual instance. TODO: this is to be merged with outer code
-        instance = model_class.objects.filter(lookup_field_name=id_value).first()
+        instance = model_class.objects.filter(**{lookup_field_name: id_value}).first()
         if instance:
             return str(instance.pk)
 
