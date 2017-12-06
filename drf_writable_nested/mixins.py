@@ -4,10 +4,12 @@ from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.utils.six.moves.urllib.parse import urlparse
 from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
+from rest_framework.compat import resolve, Resolver404
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -105,19 +107,72 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         return instances
 
-    def _get_related_pk(self, data, model_class):
-        pk = data.get('pk') or data.get(model_class._meta.pk.attname)
+    def _get_related_pk(self, data, model_class, related_field=None):
+        """
+        Returns a PK of the related instance mentioned in the payload.
 
-        if pk:
-            return str(pk)
+        :param data: a nested portion of the payload associated with the related field
+        :param model_class: a related model class (can be computed out of related_field)
+        :param related_field: a field which declares a nested serializer
+        """
 
-        return None
+        if related_field is None:
+            # fallback to default behavior
+            return data.get('pk') or data.get(model_class._meta.pk.attname)
+
+        # figuring out which fields of nested serializer might be used as ID
+        id_types = (serializers.HyperlinkedIdentityField, serializers.UUIDField)
+        id_names = ('pk', model_class._meta.pk.attname, 'id')
+
+        possible_id_fields = {
+            field_name: field_obj
+            for field_name, field_obj in related_field.fields.fields.items()
+            if isinstance(field_obj, id_types) or field_name in id_names
+        }
+
+        # looking for one of these fields in the payload
+        try:
+            id_field_name = (set(possible_id_fields) & set(data)).pop()
+            id_field_obj = possible_id_fields[id_field_name]
+            id_data = data[id_field_name]
+        except KeyError:
+            # payload doesn't have any data about id, return nothing
+            return
+
+        # retrieving an id value out of payload. For non hyperlinked fields
+        # the id_data in the payload is an actual id we can use to lookup a related instance
+        lookup_field_name = id_field_name
+        id_value = id_data
+
+        if isinstance(id_field_obj, serializers.HyperlinkedIdentityField):
+            # in case of HyperlinkedIdentityField, id_data is an url pointing to instance,
+            # so we need to retrieve an id out of it with respect to URLs scheme
+            lookup_field_name = id_field_obj.lookup_field
+
+            path = urlparse(id_data).path
+            try:
+                match = resolve(path)
+            except Resolver404:
+                return
+
+            id_value = match.kwargs[lookup_field_name]
+
+        # getting the actual instance. TODO: this is to be merged with outer code
+        instance = model_class.objects.filter(lookup_field_name=id_value).first()
+        if instance:
+            return str(instance.pk)
+
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
         # many-to-one, many-to-many, reversed one-to-one
         for field_name, (related_field, field, field_source) in \
                 reverse_relations.items():
+
+            if self.partial and field_name not in self.initial_data:
+                # in case of partial update, related fields don't have to be in the payload
+                continue
+
             related_data = self.initial_data[field_name]
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
@@ -139,7 +194,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             new_related_instances = []
             for data in related_data:
                 obj = instances.get(
-                    self._get_related_pk(data, field.Meta.model)
+                    self._get_related_pk(data, field.Meta.model, related_field=related_field)
                 )
                 serializer = self._get_serializer_for_field(
                     field,
@@ -159,9 +214,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def update_or_create_direct_relations(self, attrs, relations):
         for field_name, (field, field_source) in relations.items():
             obj = None
+
+            if self.partial and field_name not in self.initial_data:
+                # in case of partial update, related fields don't have to be in the payload
+                continue
+
             data = self.initial_data[field_name]
             model_class = field.Meta.model
-            pk = self._get_related_pk(data, model_class)
+            pk = self._get_related_pk(data, model_class, related_field=field)
             if pk:
                 obj = model_class.objects.filter(
                     pk=pk,
@@ -232,6 +292,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         )
 
         # Update instance
+        instance = instance._meta.model.objects.get(pk=instance.pk)
         instance = super(NestedUpdateMixin, self).update(
             instance,
             validated_data,
