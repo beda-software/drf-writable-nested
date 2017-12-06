@@ -162,7 +162,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         if instance:
             return str(instance.pk)
 
-
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
         # many-to-one, many-to-many, reversed one-to-one
@@ -194,7 +193,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             new_related_instances = []
             for data in related_data:
                 obj = instances.get(
-                    self._get_related_pk(data, field.Meta.model, related_field=related_field)
+                    self._get_related_pk(data, field.Meta.model, related_field=field)
                 )
                 serializer = self._get_serializer_for_field(
                     field,
