@@ -94,7 +94,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         model_class = field.Meta.model
         pk_list = []
         for d in filter(None, related_data):
-            pk = self._get_related_pk(d, model_class)
+            pk = self._get_related_pk(d, model_class, related_field=field)
             if pk:
                 pk_list.append(pk)
 
