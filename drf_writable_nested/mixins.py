@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import uuid
 from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
@@ -7,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.six.moves.urllib.parse import urlparse
 from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
+from django.db.utils import IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.compat import resolve, Resolver404
@@ -330,24 +330,36 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     related_field.name: instance,
                 }
 
-            current_ids = [d.get('pk') for d in related_data if d is not None]
+            payload_ids = [self._get_related_pk(d, model_class, field) for d in related_data if d is not None]
             try:
-                pks_to_delete = list(
+                pks_to_unlink = list(
                     model_class.objects.filter(
                         **related_field_lookup
                     ).exclude(
-                        pk__in=current_ids
+                        pk__in=payload_ids
                     ).values_list('pk', flat=True)
                 )
 
                 if related_field.many_to_many:
                     # Remove relations from m2m table
                     m2m_manager = getattr(instance, field_source)
-                    m2m_manager.remove(*pks_to_delete)
+                    m2m_manager.remove(*pks_to_unlink)
+
+                elif field_name in self.Meta.allow_delete_on_update:
+                    # serializer is configured to delete related instances which are about to be unlinked
+                    model_class.objects.filter(pk__in=pks_to_unlink).delete()
+
                 else:
-                    model_class.objects.filter(pk__in=pks_to_delete).delete()
+                    # unlink related instances from parent instance
+                    fields_to_null = {f: None for f in related_field_lookup.keys()}
+                    model_class.objects.filter(pk__in=pks_to_unlink).update(**fields_to_null)
 
             except ProtectedError as e:
                 instances = e.args[1]
                 self.fail('cannot_delete_protected', instances=", ".join([
+                    str(instance) for instance in instances]))
+
+            except IntegrityError as e:
+                instances = e.args[1]
+                self.fail('cannot_unlink_not_nullable_instances', instances=", ".join([
                     str(instance) for instance in instances]))
