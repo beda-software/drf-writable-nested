@@ -110,6 +110,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _get_related_pk(self, data, model_class, related_field=None):
         """
         Returns a PK of the related instance mentioned in the payload.
+        Supports HyperlinkedIdentityField, UUIDFields, id and pk as resource identifiers.
 
         :param data: a nested portion of the payload associated with the related field
         :param model_class: a related model class (can be computed out of related_field)
@@ -157,10 +158,57 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             id_value = match.kwargs[lookup_field_name]
 
-        # getting the actual instance. TODO: this is to be merged with outer code
+        # getting the actual instance
         instance = model_class.objects.filter(**{lookup_field_name: id_value}).first()
         if instance:
             return str(instance.pk)
+
+    @staticmethod
+    def _create_m2m_relations(m2m_model_class, instance_a, instance_b):
+        """
+        Creates a M2M relationship between two instances through
+        specified M2M proxy model.
+        """
+
+        # looking for FK field pointing to instance class
+        params = {}
+
+        # determine FK fields of m2m model
+        fk_fields = [f for f in m2m_model_class._meta.fields if f.many_to_one]
+
+        for fk_field in fk_fields:
+            # looking for FK field names pointing to the instances
+
+            if fk_field.related_model == type(instance_a):
+                params[fk_field.name] = instance_a
+
+            if fk_field.related_model == type(instance_b):
+                params[fk_field.name] = instance_b
+
+        return m2m_model_class.objects.create(**params)
+
+    @staticmethod
+    def _remove_m2m_relations(m2m_model_class, instance_a, instance_b_class, pks_to_unlink):
+        """
+        Removes M2M relationship between the instance A and specified
+        instances B through the M2M proxy model.
+        """
+
+        lookup_params = {}
+
+        # determine FK fields of m2m model
+        fk_fields = [f for f in m2m_model_class._meta.fields if f.many_to_one]
+
+        for fk_field in fk_fields:
+
+            if fk_field.related_model == type(instance_a):
+                lookup_params[fk_field.name] = instance_a
+
+            if fk_field.related_model == instance_b_class:
+                lookup_params['{}__pk__in'.format(fk_field.name)] = pks_to_unlink
+
+        # remove the relations
+        return m2m_model_class.objects.filter(**lookup_params).delete()
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
@@ -206,9 +254,12 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 new_related_instances.append(related_instance)
 
             if related_field.many_to_many:
-                # Add m2m instances to through model via add
-                m2m_manager = getattr(instance, field_source)
-                m2m_manager.add(*new_related_instances)
+                # add() method is not used here for adding M2M instances
+                # because it doesn't support custom M2M proxy models
+                m2m_model_class = related_field.remote_field.through
+
+                for new_related_instance in new_related_instances:
+                    self._create_m2m_relations(m2m_model_class, instance, new_related_instance)
 
     def update_or_create_direct_relations(self, attrs, relations):
         for field_name, (field, field_source) in relations.items():
@@ -305,7 +356,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         reverse_relations = OrderedDict(
             reversed(list(reverse_relations.items())))
 
-        # Delete instances which is missed in data
+        # unlink or delete instances which are missed in payload
         for field_name, (related_field, field, field_source) in \
                 reverse_relations.items():
             model_class = field.Meta.model
@@ -330,23 +381,39 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     related_field.name: instance,
                 }
 
-            payload_ids = [self._get_related_pk(d, model_class, field) for d in related_data if d is not None]
+            # it's safe to use 'pk' here as it was pre-added by
+            # update_or_create_reverse_relations method explicitly
+            payload_ids = [d.get('pk') for d in related_data if d is not None]
+
+            pks_to_unlink = list(
+                model_class.objects.filter(
+                    **related_field_lookup
+                ).exclude(
+                    pk__in=payload_ids
+                ).values_list('pk', flat=True)
+            )
+
+            if not pks_to_unlink:
+                continue
+
             try:
-                pks_to_unlink = list(
-                    model_class.objects.filter(
-                        **related_field_lookup
-                    ).exclude(
-                        pk__in=payload_ids
-                    ).values_list('pk', flat=True)
-                )
 
                 if related_field.many_to_many:
-                    # Remove relations from m2m table
-                    m2m_manager = getattr(instance, field_source)
-                    m2m_manager.remove(*pks_to_unlink)
+                    # Remove relations from m2m table.
+                    m2m_model_class = related_field.remote_field.through
+                    self._remove_m2m_relations(
+                        m2m_model_class=m2m_model_class,
+                        instance_a=instance,
+                        instance_b_class=model_class,
+                        pks_to_unlink=pks_to_unlink
+                    )
 
-                elif field_name in self.Meta.allow_delete_on_update:
-                    # serializer is configured to delete related instances which are about to be unlinked
+                    if field_name in getattr(self.Meta, 'allow_delete_on_update', []):
+                        # serializer is configured to delete related instances after unlinking
+                        model_class.objects.filter(pk__in=pks_to_unlink).delete()
+
+                elif field_name in getattr(self.Meta, 'allow_delete_on_update', []):
+                    # serializer is configured to delete related instances after unlinking
                     model_class.objects.filter(pk__in=pks_to_unlink).delete()
 
                 else:
@@ -359,7 +426,5 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 self.fail('cannot_delete_protected', instances=", ".join([
                     str(instance) for instance in instances]))
 
-            except IntegrityError as e:
-                instances = e.args[1]
-                self.fail('cannot_unlink_not_nullable_instances', instances=", ".join([
-                    str(instance) for instance in instances]))
+            except IntegrityError:
+                self.fail('cannot_unlink_not_nullable_instances')
