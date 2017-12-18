@@ -110,6 +110,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _get_related_pk(self, data, model_class, related_field=None):
         """
         Returns a PK of the related instance mentioned in the payload.
+
         Supports HyperlinkedIdentityField, UUIDFields, id and pk as resource identifiers.
 
         :param data: a nested portion of the payload associated with the related field
@@ -166,34 +167,32 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     @staticmethod
     def _create_m2m_relations(m2m_model_class, instance_a, instance_b):
         """
-        Creates a M2M relationship between two instances through
-        specified M2M proxy model.
-        """
+        Creates a M2M relationship between two instances via M2M proxy model.
 
+        If a certain relation already exists, does nothing.
+        """
         # looking for FK field pointing to instance class
         params = {}
 
         # determine FK fields of m2m model
         fk_fields = [f for f in m2m_model_class._meta.fields if f.many_to_one]
 
+        # assigning instances A and B to appropriate FK fields of m2m model
         for fk_field in fk_fields:
-            # looking for FK field names pointing to the instances
 
-            if fk_field.related_model == type(instance_a):
+            if isinstance(instance_a, fk_field.related_model):
                 params[fk_field.name] = instance_a
 
-            if fk_field.related_model == type(instance_b):
+            elif isinstance(instance_b, fk_field.related_model):
                 params[fk_field.name] = instance_b
 
-        return m2m_model_class.objects.create(**params)
+        return m2m_model_class.objects.get_or_create(**params)
 
     @staticmethod
     def _remove_m2m_relations(m2m_model_class, instance_a, instance_b_class, pks_to_unlink):
         """
-        Removes M2M relationship between the instance A and specified
-        instances B through the M2M proxy model.
+        Removes M2M relationship between instance A and specified instances B.
         """
-
         lookup_params = {}
 
         # determine FK fields of m2m model
@@ -201,13 +200,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         for fk_field in fk_fields:
 
-            if fk_field.related_model == type(instance_a):
+            if isinstance(instance_a, fk_field.related_model):
                 lookup_params[fk_field.name] = instance_a
 
-            if fk_field.related_model == instance_b_class:
+            if issubclass(instance_b_class, fk_field.related_model):
                 lookup_params['{}__pk__in'.format(fk_field.name)] = pks_to_unlink
 
         # remove the relations
+        assert len(lookup_params) > 1, "Lookup parameters to delete m2m relations are not fully set"
         return m2m_model_class.objects.filter(**lookup_params).delete()
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
@@ -329,7 +329,11 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
     default_error_messages = {
         'cannot_delete_protected': _(
             "Cannot delete {instances} because "
-            "protected relation exists")
+            "protected relation exists"),
+        'cannot_unlink_not_nullable_instances': _(
+            "Cannot unlink a nested instance from its parent instance "
+            "because it has a not-nullable key to the parent."
+        ),
     }
 
     def update(self, instance, validated_data):
