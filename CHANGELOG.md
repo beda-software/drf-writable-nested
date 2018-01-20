@@ -1,4 +1,7 @@
-# 0.4.0
+## 0.4.1
+* Changed setup config for PyPI
+
+## 0.4.0
 * Add Django 2.0 support #23
 * Drop support for Django 1.8
 
