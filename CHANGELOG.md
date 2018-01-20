@@ -1,3 +1,6 @@
+## 0.3.2
+* Fix multipart form data (@ron8mcr)
+
 ## 0.3.1
 * Fix problem with different field name specified via `source` attribute #22
 

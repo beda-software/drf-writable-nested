@@ -78,13 +78,14 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(models.AccessKey.objects.count(), 1)
 
     def test_create_with_not_specified_reverse_one_to_one(self):
-        serializer = serializers.UserSerializer(data={'username': 'test',})
+        serializer = serializers.UserSerializer(data={'username': 'test'})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertFalse(models.Profile.objects.filter(user=user).exists())
 
     def test_create_with_empty_reverse_one_to_one(self):
-        serializer = serializers.UserSerializer(data={'username': 'test', 'profile': None})
+        serializer = serializers.UserSerializer(
+            data={'username': 'test', 'profile': None})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         self.assertFalse(models.Profile.objects.filter(user=user).exists())
@@ -482,18 +483,17 @@ class WritableNestedModelSerializerTest(TestCase):
 
     def test_create_m2m_with_existing_related_objects(self):
         users = [
-            models.User.objects.create(username='user one'),
-            models.User.objects.create(username='user two'),
+            models.User.objects.create(username='first user'),
+            models.User.objects.create(username='second user'),
         ]
-        user_data = serializers.UserSerializer(
+        users_data = serializers.UserSerializer(
             users,
             many=True
         ).data
-        user_data.append({'username': 'user three'})
-        user_data[0]['username'] = 'first user'
+        users_data.append({'username': 'third user'})
         data = {
-            'name': 'Team Test',
-            'members': user_data,
+            'name': 'Team',
+            'members': users_data,
         }
         serializer = serializers.TeamSerializer(data=data)
         self.assertTrue(serializer.is_valid())
@@ -502,15 +502,15 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(3, models.User.objects.count())
         self.assertEqual('first user', team.members.first().username)
 
-        #update
+        # Update
         data = serializers.TeamSerializer(team).data
-        data['members'].append({'username': 'last user'})
+        data['members'].append({'username': 'fourth user'})
         serializer = serializers.TeamSerializer(team, data=data)
         self.assertTrue(serializer.is_valid())
         team = serializer.save()
         self.assertEqual(4, team.members.count())
         self.assertEqual(4, models.User.objects.count())
-        self.assertEqual('last user', team.members.last().username)
+        self.assertEqual('fourth user', team.members.last().username)
 
     def test_create_fk_with_existing_related_object(self):
         user = models.User.objects.create(username='user one')
@@ -720,7 +720,7 @@ class WritableNestedModelSerializerTest(TestCase):
     def test_create_with_html_input_data(self):
         """Serializer should not fail if request type is multipart
         """
-        # DRF sets data to `QueryDuct` when request type is `multipart`
+        # DRF sets data to `QueryDict` when request type is `multipart`
         data = QueryDict('name=team')
         serializer = serializers.TeamSerializer(
             data=data
@@ -729,3 +729,4 @@ class WritableNestedModelSerializerTest(TestCase):
         team = serializer.save()
 
         self.assertTrue(models.Team.objects.filter(id=team.id).exists())
+        self.assertEqual(team.name, 'team')

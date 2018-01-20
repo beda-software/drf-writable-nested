@@ -118,14 +118,16 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         # many-to-one, many-to-many, reversed one-to-one
         for field_name, (related_field, field, field_source) in \
                 reverse_relations.items():
-            related_data = self.initial_data.get(field_name)
-            if not related_data:
+
+            # Skip processing for empty data or not-specified field.
+            # The field can be defined in validated_data but isn't defined
+            # in initial_data (for example, if multipart form data used)
+            related_data = self.initial_data.get(field_name, None)
+            if related_data is None:
                 continue
+
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
-                if related_data is None:
-                    # Skip processing for empty data
-                    continue
                 related_data = [related_data]
 
             instances = self.prefetch_related_instances(field, related_data)
