@@ -1,3 +1,7 @@
+# 0.4.0
+* Add Django 2.0 support #23
+* Drop support for Django 1.8
+
 ## 0.3.3
 * Fix multipart form data (@ron8mcr)
 

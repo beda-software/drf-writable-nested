@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import uuid
 from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
@@ -264,7 +263,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             if related_field.many_to_many and \
                     not isinstance(related_field, ForeignObjectRel):
                 related_field_lookup = {
-                    related_field.rel.name: instance,
+                    related_field.remote_field.name: instance,
                 }
             elif isinstance(related_field, GenericRelation):
                 related_field_lookup = \
