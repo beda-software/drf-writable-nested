@@ -8,8 +8,8 @@ from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
 from django.db.utils import IntegrityError
 from django.utils.translation import ugettext_lazy as _
+from django.urls import Resolver404, resolve
 from rest_framework import serializers
-from rest_framework.compat import resolve, Resolver404
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
