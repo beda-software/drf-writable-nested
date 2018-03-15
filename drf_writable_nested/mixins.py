@@ -125,8 +125,17 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             if related_data is None:
                 continue
 
-            # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
+                # If an object already exists, fill in the pk so we don't try to duplicate it
+                pk_name = field.Meta.model._meta.pk.attname
+                if pk_name not in related_data and 'pk' in related_data:
+                    pk_name = 'pk'
+                if pk_name not in related_data:
+                    related_instance = getattr(instance, field_source, None)
+                    if related_instance:
+                        related_data[pk_name] = related_instance.pk
+
+                # Expand to array of one item for one-to-one for uniformity
                 related_data = [related_data]
 
             instances = self.prefetch_related_instances(field, related_data)
