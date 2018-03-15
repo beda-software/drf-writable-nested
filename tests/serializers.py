@@ -96,7 +96,7 @@ class TaggedItemSerializer(WritableNestedModelSerializer):
 
 
 class TeamSerializer(WritableNestedModelSerializer):
-    members = UserSerializer(many=True)
+    members = UserSerializer(many=True, required=False)
 
     class Meta:
         model = models.Team

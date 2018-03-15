@@ -17,7 +17,7 @@ Requirements
 ============
 
 - Python (2.7, 3.5, 3.6)
-- Django (1.8, 1.9, 1.10, 1.11)
+- Django (1.9, 1.10, 1.11, 2.0)
 - djangorestframework (3.5+)
 
 Installation
@@ -213,5 +213,5 @@ Note: The same value will be used for all nested instances like default value bu
 
 Authors
 =======
-2014-2017, beda.software
+2014-2018, beda.software
 

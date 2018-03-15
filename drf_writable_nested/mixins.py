@@ -216,16 +216,15 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         for field_name, (related_field, field, field_source) in \
                 reverse_relations.items():
 
-            if self.partial and field_name not in self.initial_data:
-                # in case of partial update, related fields don't have to be in the payload
+            # Skip processing for empty data or not-specified field.
+            # The field can be defined in validated_data but isn't defined
+            # in initial_data (for example, if multipart form data used)
+            related_data = self.initial_data.get(field_name, None)
+            if related_data is None:
                 continue
 
-            related_data = self.initial_data[field_name]
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
-                if related_data is None:
-                    # Skip processing for empty data
-                    continue
                 related_data = [related_data]
 
             instances = self.prefetch_related_instances(field, related_data)
@@ -375,7 +374,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             if related_field.many_to_many and \
                     not isinstance(related_field, ForeignObjectRel):
                 related_field_lookup = {
-                    related_field.rel.name: instance,
+                    related_field.remote_field.name: instance,
                 }
             elif isinstance(related_field, GenericRelation):
                 related_field_lookup = \
