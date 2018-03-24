@@ -18,6 +18,57 @@ from rest_framework.settings import api_settings
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
 
+    def to_internal_value(self, data):
+        """
+        Dict of native values <- Dict of primitive datatypes.
+        """
+        if not isinstance(data, Mapping):
+            message = self.error_messages['invalid'].format(
+                datatype=type(data).__name__
+            )
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: [message]
+            }, code='invalid')
+
+        ret = OrderedDict()
+        errors = OrderedDict()
+        fields = self._writable_fields
+
+        for field in fields:
+            validate_method = getattr(self, 'validate_' + field.field_name, None)
+            primitive_value = field.get_value(data)
+            try:
+                # for create only
+                if not self.partial and isinstance(primitive_value, dict) and 'url' in primitive_value:
+                    model_class = field.Meta.model
+                    pk = self._get_related_pk(primitive_value, model_class, related_field=field)
+                    if pk:
+                        obj = model_class.objects.filter(
+                            pk=pk,
+                        ).first()
+                        serializer = self._get_serializer_for_field(
+                            field,
+                            instance=obj,
+                        )
+                        primitive_value = {k: v for k, v in serializer.data.items()}
+                        self.initial_data[field.field_name] = primitive_value
+                validated_value = field.run_validation(primitive_value)
+                if validate_method is not None:
+                    validated_value = validate_method(validated_value)
+            except ValidationError as exc:
+                errors[field.field_name] = exc.detail
+            except DjangoValidationError as exc:
+                errors[field.field_name] = get_error_detail(exc)
+            except SkipField:
+                pass
+            else:
+                set_value(ret, field.source_attrs, validated_value)
+
+        if errors:
+            raise ValidationError(errors)
+
+        return ret
+
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
@@ -309,57 +360,6 @@ class NestedCreateMixin(BaseNestedModelSerializer):
     """
     Mixin adds nested create feature
     """
-
-    def to_internal_value(self, data):
-        """
-        Dict of native values <- Dict of primitive datatypes.
-        """
-        if not isinstance(data, Mapping):
-            message = self.error_messages['invalid'].format(
-                datatype=type(data).__name__
-            )
-            raise ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: [message]
-            }, code='invalid')
-
-        ret = OrderedDict()
-        errors = OrderedDict()
-        fields = self._writable_fields
-
-        for field in fields:
-            validate_method = getattr(self, 'validate_' + field.field_name, None)
-            primitive_value = field.get_value(data)
-            try:
-                # for create only
-                if not self.partial and isinstance(primitive_value, dict) and 'url' in primitive_value:
-                    model_class = field.Meta.model
-                    pk = self._get_related_pk(primitive_value, model_class, related_field=field)
-                    if pk:
-                        obj = model_class.objects.filter(
-                            pk=pk,
-                        ).first()
-                        serializer = self._get_serializer_for_field(
-                            field,
-                            instance=obj,
-                        )
-                        primitive_value = {k: v for k, v in serializer.data.items()}
-                        self.initial_data[field.field_name] = primitive_value
-                validated_value = field.run_validation(primitive_value)
-                if validate_method is not None:
-                    validated_value = validate_method(validated_value)
-            except ValidationError as exc:
-                errors[field.field_name] = exc.detail
-            except DjangoValidationError as exc:
-                errors[field.field_name] = get_error_detail(exc)
-            except SkipField:
-                pass
-            else:
-                set_value(ret, field.source_attrs, validated_value)
-
-        if errors:
-            raise ValidationError(errors)
-
-        return ret
 
     def create(self, validated_data):
         relations, reverse_relations = self._extract_relations(validated_data)
