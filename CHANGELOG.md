@@ -1,3 +1,6 @@
+## 0.4.2
+* Allow child one-to-one instances to be updated without providing PK (@karamanolev @cjroth @mathieuseguin)
+
 ## 0.4.1
 * Changed setup config for PyPI
 
