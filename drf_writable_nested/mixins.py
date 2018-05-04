@@ -38,8 +38,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             validate_method = getattr(self, 'validate_' + field.field_name, None)
             primitive_value = field.get_value(data)
             try:
-                # for create only
-                if not self.partial and isinstance(primitive_value, dict) and 'url' in primitive_value:
+                # For create only
+                if not self.partial and hasattr(self, 'initial_data') and isinstance(primitive_value, dict) \
+                        and 'url' in primitive_value:
                     model_class = field.Meta.model
                     pk = self._get_related_pk(primitive_value, model_class, related_field=field)
                     if pk:
