@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import set_value, SkipField, get_error_detail
-from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError, ObjectDoesNotExist
 from rest_framework.settings import api_settings
 
 
@@ -164,6 +164,25 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         return instances
 
+    def _get_related_queryset(self, model_class, related_field):
+        """
+        Return a queryset of related instances with respect to custom list_serializer_class.
+
+        If custom list_serializer_class has a filter_queryset method defined, it will be used
+        to filter a set of related instances. Otherwise, all related instances will be
+        returned by default.
+
+        :param model_class: a class of related model
+        :param related_field: a DRF field or seriaizer pointing to the related objects
+        """
+        queryset = model_class.objects.all()
+
+        list_serializer_class = getattr(related_field.Meta, 'list_serializer_class', None)
+        if list_serializer_class and hasattr(list_serializer_class, 'filter_queryset'):
+            queryset = list_serializer_class.filter_queryset(queryset=queryset)
+
+        return queryset
+
     def _get_related_pk(self, data, model_class, related_field=None):
         """
         Returns a PK of the related instance mentioned in the payload.
@@ -217,7 +236,12 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             id_value = match.kwargs[lookup_field_name]
 
         # getting the actual instance
-        instance = model_class.objects.filter(**{lookup_field_name: id_value}).first()
+        queryset = self._get_related_queryset(model_class, related_field)
+        try:
+            instance = queryset.get(**{lookup_field_name: id_value})
+        except ObjectDoesNotExist:
+            instance = None
+
         if instance:
             return str(instance.pk)
 
@@ -446,10 +470,9 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             # update_or_create_reverse_relations method explicitly
             payload_ids = [d.get('pk') for d in related_data if d is not None]
 
+            queryset = self._get_related_queryset(model_class, field)
             pks_to_unlink = list(
-                model_class.objects.filter(
-                    **related_field_lookup
-                ).exclude(
+                queryset.filter(**related_field_lookup).exclude(
                     pk__in=payload_ids
                 ).values_list('pk', flat=True)
             )
