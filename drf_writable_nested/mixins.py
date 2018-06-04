@@ -121,7 +121,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             # Skip processing for empty data or not-specified field.
             # The field can be defined in validated_data but isn't defined
             # in initial_data (for example, if multipart form data used)
-            related_data = self.initial_data.get(field_name, None)
+            related_data = self.get_initial().get(field_name, None)
             if related_data is None:
                 continue
 
@@ -262,7 +262,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 reverse_relations.items():
             model_class = field.Meta.model
 
-            related_data = self.initial_data[field_name]
+            related_data = self.get_initial()[field_name]
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
                 related_data = [related_data]
