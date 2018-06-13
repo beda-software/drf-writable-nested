@@ -141,6 +141,11 @@ data = {
                 'image': 'image-2.png',
             },
         ],
+        'message_set': [
+            {
+                'message': 'Test message'
+            }
+        ]
     },
 }
 
