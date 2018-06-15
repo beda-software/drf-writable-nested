@@ -7,7 +7,7 @@ from django.db.models import FieldDoesNotExist, ProtectedError
 from django.db.models.fields.related import ForeignObjectRel
 from django.db.utils import IntegrityError
 from django.urls import Resolver404, resolve
-from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.parse import urlparse, unquote
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -233,7 +233,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             except Resolver404:
                 return
 
-            id_value = match.kwargs[lookup_field_name]
+            id_value = unquote(match.kwargs[lookup_field_name])
 
         # getting the actual instance
         queryset = self._get_related_queryset(model_class, related_field)
