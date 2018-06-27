@@ -86,3 +86,12 @@ class AnotherAvatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(
         AnotherProfile, on_delete=models.CASCADE, related_name='avatars',)
+
+
+class Page(models.Model):
+    title = models.CharField(max_length=80)
+
+
+class Document(models.Model):
+    page = models.ForeignKey(Page, on_delete=models.CASCADE)
+    source = models.FileField()
