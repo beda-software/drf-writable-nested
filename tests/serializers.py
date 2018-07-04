@@ -160,3 +160,17 @@ class AnotherUserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.User
         fields = ('pk', 'another_profile', 'username',)
+
+
+class PageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Page
+        fields = ('pk', 'title')
+
+
+class DocumentSerializer(WritableNestedModelSerializer):
+    page = PageSerializer()
+
+    class Meta:
+        model = models.Document
+        fields = ('pk', 'page', 'source')

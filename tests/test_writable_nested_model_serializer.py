@@ -3,6 +3,8 @@ from rest_framework.exceptions import ValidationError
 from django.test import TestCase
 from django.http.request import QueryDict
 
+from .utils import get_sample_file
+
 from . import (
     models,
     serializers,
@@ -836,3 +838,20 @@ class WritableNestedModelSerializerTest(TestCase):
 
         self.assertTrue(models.Team.objects.filter(id=team.id).exists())
         self.assertEqual(team.name, 'team')
+
+    def test_create_with_file(self):
+        data = {
+            'page.title': 'some page',
+            'source': get_sample_file(name='sample name')
+        }
+        qdict = QueryDict('', mutable=True)
+        qdict.update(data)
+
+        serializer = serializers.DocumentSerializer(
+            data=qdict
+        )
+        serializer.is_valid(raise_exception=True)
+        doc = serializer.save()
+
+        self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
+        self.assertEqual(doc.page.title, 'some page')
