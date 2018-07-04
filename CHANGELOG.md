@@ -1,3 +1,6 @@
+## 0.4.3
+* Fix MultiValueDictKeyError for nested updates on reverse-relations  (@bakerf @projkov)
+
 ## 0.4.2
 * Allow child one-to-one instances to be updated without providing PK (@karamanolev @cjroth @mathieuseguin)
 
