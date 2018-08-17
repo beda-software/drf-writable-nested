@@ -303,3 +303,46 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 instances = e.args[1]
                 self.fail('cannot_delete_protected', instances=", ".join([
                     str(instance) for instance in instances]))
+
+
+class NestedUniqueSerializer(NestedCreateMixin, NestedUpdateMixin):
+    """
+    Serializer for handle nested unique create and update
+    """
+    fields_with_unique = []
+
+    def get_fields(self):
+        self.fields_with_unique = []
+
+        fields = super(NestedUniqueSerializer, self).get_fields()
+        for field_name, field in fields.items():
+            is_unique = any([type(validator) is UniqueValidator
+                             for validator in field.validators])
+            if is_unique:
+                self.fields_with_unique.append(field_name)
+                field.validators = list(filter(
+                    lambda validator: type(validator) is not UniqueValidator,
+                    field.validators))
+
+        return fields
+
+    def _validate_unique(self, validated_data, queryset):
+        for field_name in self.fields_with_unique:
+            unique_validator = UniqueValidator(queryset)
+            unique_validator.set_context(self.fields[field_name])
+
+            try:
+                unique_validator(validated_data[field_name])
+            except ValidationError as exc:
+                raise ValidationError({field_name: exc.detail})
+
+    def create(self, validated_data):
+        self._validate_unique(validated_data, self.Meta.model.objects.all())
+        return super(NestedUniqueSerializer, self).create(validated_data)
+
+    def update(self, instance, validated_data):
+        self._validate_unique(
+            validated_data, self.Meta.model.objects.exclude(pk=instance.pk))
+        return super(NestedUniqueSerializer, self).update(
+            instance, validated_data)
+
