@@ -7,6 +7,7 @@ from django.db.models import ProtectedError, FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -149,7 +150,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 save_kwargs[related_field.name] = instance
 
             new_related_instances = []
-            for data in related_data:
+            errors = [{} for i in range(len(related_data))]
+
+            for index, data in enumerate(related_data):
                 obj = instances.get(
                     self._get_related_pk(data, field.Meta.model)
                 )
@@ -158,10 +161,19 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     instance=obj,
                     data=data,
                 )
-                serializer.is_valid(raise_exception=True)
-                related_instance = serializer.save(**save_kwargs)
-                data['pk'] = related_instance.pk
-                new_related_instances.append(related_instance)
+                try:
+                    serializer.is_valid(raise_exception=True)
+                    related_instance = serializer.save(**save_kwargs)
+                    data['pk'] = related_instance.pk
+                    new_related_instances.append(related_instance)
+                except ValidationError as exc:
+                    errors[index] = exc.detail
+
+            if any(errors):
+                if related_field.one_to_one:
+                    raise ValidationError({field_name: errors[0]})
+                else:
+                    raise ValidationError({field_name: errors})
 
             if related_field.many_to_many:
                 # Add m2m instances to through model via add
@@ -183,10 +195,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 instance=obj,
                 data=data,
             )
-            serializer.is_valid(raise_exception=True)
-            attrs[field_source] = serializer.save(
-                **self.get_save_kwargs(field_name)
-            )
+
+            try:
+                serializer.is_valid(raise_exception=True)
+                attrs[field_source] = serializer.save(
+                    **self.get_save_kwargs(field_name)
+                )
+            except ValidationError as exc:
+                raise ValidationError({field_name: exc.detail})
 
     def save(self, **kwargs):
         self.save_kwargs = defaultdict(dict, kwargs)
@@ -345,4 +361,3 @@ class NestedUniqueSerializer(NestedCreateMixin, NestedUpdateMixin):
             validated_data, self.Meta.model.objects.exclude(pk=instance.pk))
         return super(NestedUniqueSerializer, self).update(
             instance, validated_data)
-
