@@ -700,6 +700,45 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual('next-key', custompks[1].slug)
         self.assertEqual(2, models.CustomPK.objects.count())
 
+    def test_custom_pk_unique(self):
+        data = {
+            'username': 'username',
+            'custompks': [
+                {'slug': 'custom-key'},
+                {'slug': 'custom-key-2'}
+            ]
+        }
+        serializer = serializers.UserWithCustomPKSerializer(
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+
+        self.assertListEqual(
+            list(user.custompks.all().values_list('slug', flat=True)),
+            ['custom-key', 'custom-key-2']
+        )
+
+        data = {
+            'username': 'username',
+            'custompks': [
+                {'slug': 'custom-key-2'},
+                {'slug': 'custom-key-2'}
+            ]
+        }
+        serializer = serializers.UserWithCustomPKSerializer(
+            instance=user,
+            data=data,
+        )
+        self.assertTrue(serializer.is_valid())
+        with self.assertRaises(ValidationError) as context:
+            serializer.save()
+
+        self.assertIn('custompks', context.exception.detail)
+        self.assertEqual(len(context.exception.detail['custompks']), 2)
+        self.assertIn('slug', context.exception.detail['custompks'][0])
+        self.assertIn('slug', context.exception.detail['custompks'][1])
+
     def get_another_initial_data(self):
         return {
             'username': 'test',

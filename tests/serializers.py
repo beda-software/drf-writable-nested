@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from drf_writable_nested import WritableNestedModelSerializer
+from drf_writable_nested.mixins import UniqueFieldsMixin
 
 from . import models
 
@@ -106,7 +107,7 @@ class TeamSerializer(WritableNestedModelSerializer):
         )
 
 
-class CustomPKSerializer(serializers.ModelSerializer):
+class CustomPKSerializer(UniqueFieldsMixin):
     class Meta:
         model = models.CustomPK
         fields = (

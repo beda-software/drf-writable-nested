@@ -8,6 +8,7 @@ from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -321,30 +322,28 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     str(instance) for instance in instances]))
 
 
-class NestedUniqueSerializer(NestedCreateMixin, NestedUpdateMixin):
-    """
-    Serializer for handle nested unique create and update
-    """
-    fields_with_unique = []
+# TODO: write about mixin ordering in README and here
+class UniqueFieldsMixin(serializers.ModelSerializer):
+    _unique_fields = []
 
     def get_fields(self):
-        self.fields_with_unique = []
+        self._unique_fields = []
 
-        fields = super(NestedUniqueSerializer, self).get_fields()
+        fields = super(UniqueFieldsMixin, self).get_fields()
         for field_name, field in fields.items():
-            is_unique = any([type(validator) is UniqueValidator
+            is_unique = any([isinstance(validator, UniqueValidator)
                              for validator in field.validators])
             if is_unique:
-                self.fields_with_unique.append(field_name)
-                field.validators = list(filter(
-                    lambda validator: type(validator) is not UniqueValidator,
-                    field.validators))
+                self._unique_fields.append(field_name)
+                field.validators = [
+                    validator for validator in field.validators
+                    if not isinstance(validator, UniqueValidator)]
 
         return fields
 
-    def _validate_unique(self, validated_data, queryset):
-        for field_name in self.fields_with_unique:
-            unique_validator = UniqueValidator(queryset)
+    def _validate_unique_fields(self, validated_data):
+        for field_name in self._unique_fields:
+            unique_validator = UniqueValidator(self.Meta.model.objects.all())
             unique_validator.set_context(self.fields[field_name])
 
             try:
@@ -353,11 +352,9 @@ class NestedUniqueSerializer(NestedCreateMixin, NestedUpdateMixin):
                 raise ValidationError({field_name: exc.detail})
 
     def create(self, validated_data):
-        self._validate_unique(validated_data, self.Meta.model.objects.all())
-        return super(NestedUniqueSerializer, self).create(validated_data)
+        self._validate_unique_fields(validated_data)
+        return super(UniqueFieldsMixin, self).create(validated_data)
 
     def update(self, instance, validated_data):
-        self._validate_unique(
-            validated_data, self.Meta.model.objects.exclude(pk=instance.pk))
-        return super(NestedUniqueSerializer, self).update(
-            instance, validated_data)
+        self._validate_unique_fields(validated_data)
+        return super(UniqueFieldsMixin, self).update(instance, validated_data)

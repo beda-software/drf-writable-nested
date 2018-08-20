@@ -56,7 +56,7 @@ class Team(models.Model):
 
 class CustomPK(models.Model):
     slug = models.SlugField(
-        primary_key=True,
+        unique=True
     )
     user = models.ForeignKey(
         User,
