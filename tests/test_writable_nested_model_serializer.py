@@ -894,3 +894,49 @@ class WritableNestedModelSerializerTest(TestCase):
 
         self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
         self.assertEqual(doc.page.title, 'some page')
+
+    def test_error_on_direct_relations(self):
+        models.Page.objects.create(title='page')
+        data = {
+            'page': {
+                'title': 'page'
+            },
+            'source': get_sample_file(name='sample name')
+        }
+
+        serializer = serializers.DocumentSerializer(
+            data=data
+        )
+        serializer.is_valid(raise_exception=True)
+        with self.assertRaises(ValidationError) as context:
+            serializer.save()
+
+        self.assertIn('page', context.exception.detail)
+        self.assertIn('title', context.exception.detail['page'])
+
+    def test_error_on_one_to_one(self):
+        data = {
+            'title': 'page',
+            'number': {
+                'number': 1
+            }
+        }
+
+        serializer = serializers.PageSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        data = {
+            'title': 'second page',
+            'number': {
+                'number': 1
+            }
+        }
+
+        serializer = serializers.PageSerializer(data=data)
+        with self.assertRaises(ValidationError) as context:
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        self.assertIn('number', context.exception.detail)
+        self.assertIn('number', context.exception.detail['number'])

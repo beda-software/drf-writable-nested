@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from drf_writable_nested import WritableNestedModelSerializer
-from drf_writable_nested.mixins import UniqueFieldsMixin
+from drf_writable_nested.mixins import UniqueFieldsMixin, NestedCreateMixin
 
 from . import models
 
@@ -163,10 +163,19 @@ class AnotherUserSerializer(WritableNestedModelSerializer):
         fields = ('pk', 'another_profile', 'username',)
 
 
-class PageSerializer(serializers.ModelSerializer):
+class PageNumberSerializer(WritableNestedModelSerializer):
+
+    class Meta:
+        model = models.PageNumber
+        fields = ('pk', 'page', 'number')
+
+
+class PageSerializer(UniqueFieldsMixin, NestedCreateMixin):
+    number = PageNumberSerializer(required=False)
+
     class Meta:
         model = models.Page
-        fields = ('pk', 'title')
+        fields = ('pk', 'title', 'number')
 
 
 class DocumentSerializer(WritableNestedModelSerializer):

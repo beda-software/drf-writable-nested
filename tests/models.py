@@ -89,9 +89,16 @@ class AnotherAvatar(models.Model):
 
 
 class Page(models.Model):
-    title = models.CharField(max_length=80)
+    title = models.CharField(max_length=80, unique=True)
 
 
 class Document(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     source = models.FileField()
+
+
+class PageNumber(models.Model):
+    page = models.OneToOneField(
+        Page, on_delete=models.CASCADE,
+        related_name='number', blank=True, null=True)
+    number = models.IntegerField(unique=True)
