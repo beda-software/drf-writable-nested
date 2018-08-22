@@ -8,5 +8,5 @@ __copyright__ = 'Copyright 2014-2018 beda.software'
 VERSION = __version__
 
 
-from .mixins import NestedUpdateMixin, NestedCreateMixin
+from .mixins import NestedUpdateMixin, NestedCreateMixin, UniqueFieldsMixin
 from .serializers import WritableNestedModelSerializer
