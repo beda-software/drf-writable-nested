@@ -895,11 +895,13 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
         self.assertEqual(doc.page.title, 'some page')
 
+
+class UniqueFieldsMixinTestCase(TestCase):
     def test_error_on_direct_relations(self):
-        models.Page.objects.create(title='page')
+        page = models.Page.objects.create(title='page')
         data = {
             'page': {
-                'title': 'page'
+                'title': page.title
             },
             'source': get_sample_file(name='sample name')
         }
@@ -915,21 +917,12 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertIn('title', context.exception.detail['page'])
 
     def test_error_on_one_to_one(self):
+        page_number = models.PageNumber.objects.create(number=1)
+
         data = {
             'title': 'page',
             'number': {
-                'number': 1
-            }
-        }
-
-        serializer = serializers.PageSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        data = {
-            'title': 'second page',
-            'number': {
-                'number': 1
+                'number': page_number.number
             }
         }
 
