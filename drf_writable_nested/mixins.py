@@ -222,7 +222,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
 class NestedCreateMixin(BaseNestedModelSerializer):
     """
-    Mixin adds nested create feature
+    Adds nested create feature
     """
     def create(self, validated_data):
         relations, reverse_relations = self._extract_relations(validated_data)
@@ -243,7 +243,7 @@ class NestedCreateMixin(BaseNestedModelSerializer):
 
 class NestedUpdateMixin(BaseNestedModelSerializer):
     """
-    Mixin adds update nested feature
+    Adds update nested feature
     """
     default_error_messages = {
         'cannot_delete_protected': _(
@@ -284,8 +284,8 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
             if related_field.one_to_one:
                 related_data = [related_data]
 
-            # M2M relation can be as direct or as reverse. For direct relation we
-            # should use reverse relation name
+            # M2M relation can be as direct or as reverse. For direct relation
+            # we should use reverse relation name
             if related_field.many_to_many and \
                     not isinstance(related_field, ForeignObjectRel):
                 related_field_lookup = {
@@ -322,8 +322,44 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     str(instance) for instance in instances]))
 
 
-# TODO: write about mixin ordering in README and here
 class UniqueFieldsMixin(serializers.ModelSerializer):
+    """
+    Moves `UniqueValidator`'s from the validation stage to the save stage.
+    It solves the problem with nested validation for unique fields on update.
+
+    If you want more details, you can read related issues and articles:
+    https://github.com/beda-software/drf-writable-nested/issues/1
+    http://www.django-rest-framework.org/api-guide/validators/#updating-nested-serializers
+
+    Example of usage:
+    ```
+    class Parent(models.Model):
+        child = models.ForeignKey('Child')
+
+
+    class Child(models.Model):
+        field = models.CharField(unique=True)
+
+
+    class ParentSerializer(NestedUpdateMixin, serializers.ModelSerializer):
+        child = ChildSerializer()
+
+        class Meta:
+            model = Parent
+
+
+    class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+        class Meta:
+            model = Child
+    ```
+
+    Note: `UniqueFieldsMixin` must be applied only on the serializer
+    which has unique fields.
+
+    Note: When you are using both mixins
+    (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
+    you should put `UniqueFieldsMixin` ahead.
+    """
     _unique_fields = []
 
     def get_fields(self):

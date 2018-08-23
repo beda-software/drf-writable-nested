@@ -210,12 +210,57 @@ print(user.profile.access_key.key)
 Note: The same value will be used for all nested instances like default value but with higher priority.
 
 
-Nested unique serializers
-=======
+Known problems with solutions
+=============================
+
+
+##### Validation problem for nested serializers with unique fields on update
+We have a special mixin `UniqueFieldsMixin` which solves this problem.
+The mixin moves` UniqueValidator`'s from the validation stage to the save stage.
+
+If you want more details, you can read related issues and articles:
+https://github.com/beda-software/drf-writable-nested/issues/1
+http://www.django-rest-framework.org/api-guide/validators/#updating-nested-serializers
+
+###### Example of usage:
+```
+class Parent(models.Model):
+    child = models.ForeignKey('Child')
+
+
+class Child(models.Model):
+    field = models.CharField(unique=True)
+
+
+class ParentSerializer(NestedUpdateMixin, serializers.ModelSerializer):
+    child = ChildSerializer()
+
+    class Meta:
+        model = Parent
+
+
+class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Child
+```
+
+Note: `UniqueFieldsMixin` must be applied only on serializer
+which has unique fields.
+
+###### Mixin ordering
+When you are using both mixins
+(`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
+you should put `UniqueFieldsMixin` ahead.
+
+For example:
+```
+class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
+        serializers.ModelSerializer):
+```
+
 
 
 
 Authors
 =======
 2014-2018, beda.software
-
