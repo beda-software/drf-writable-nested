@@ -669,6 +669,16 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual('http://test.com', sites[0].url)
         self.assertEqual('http://test.com', sites[1].url)
 
+    def test_create_with_save_kwargs_failed(self):
+        data = self.get_initial_data()
+        serializer = serializers.UserSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        with self.assertRaises(TypeError):
+            user = serializer.save(
+                profile=None,
+            )
+
     def test_custom_pk(self):
         data = {
             'username': 'username',
