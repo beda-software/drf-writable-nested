@@ -334,12 +334,17 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
 
     Example of usage:
     ```
+        class Child(models.Model):
+        field = models.CharField(unique=True)
+
+
     class Parent(models.Model):
         child = models.ForeignKey('Child')
 
 
-    class Child(models.Model):
-        field = models.CharField(unique=True)
+    class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+        class Meta:
+            model = Child
 
 
     class ParentSerializer(NestedUpdateMixin, serializers.ModelSerializer):
@@ -347,11 +352,6 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
 
         class Meta:
             model = Parent
-
-
-    class ChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
-        class Meta:
-            model = Child
     ```
 
     Note: `UniqueFieldsMixin` must be applied only on the serializer

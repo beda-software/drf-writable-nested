@@ -89,7 +89,7 @@ class AnotherAvatar(models.Model):
 
 
 class Page(models.Model):
-    title = models.CharField(max_length=80, unique=True)
+    title = models.CharField(max_length=80)
 
 
 class Document(models.Model):
@@ -97,8 +97,11 @@ class Document(models.Model):
     source = models.FileField()
 
 
-class PageNumber(models.Model):
-    page = models.OneToOneField(
-        Page, on_delete=models.CASCADE,
-        related_name='number', blank=True, null=True)
-    number = models.IntegerField(unique=True)
+# Models for UniqueFieldsMixin
+
+class UFMChild(models.Model):
+    field = models.CharField(max_length=50, unique=True)
+
+
+class UFMParent(models.Model):
+    child = models.ForeignKey(UFMChild, on_delete=models.CASCADE)

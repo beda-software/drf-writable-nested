@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from drf_writable_nested import WritableNestedModelSerializer
-from drf_writable_nested.mixins import UniqueFieldsMixin, NestedCreateMixin
+from drf_writable_nested import (
+    WritableNestedModelSerializer, UniqueFieldsMixin, NestedCreateMixin)
 
 from . import models
 
@@ -163,19 +163,10 @@ class AnotherUserSerializer(WritableNestedModelSerializer):
         fields = ('pk', 'another_profile', 'username',)
 
 
-class PageNumberSerializer(WritableNestedModelSerializer):
-
-    class Meta:
-        model = models.PageNumber
-        fields = ('pk', 'page', 'number')
-
-
-class PageSerializer(UniqueFieldsMixin, NestedCreateMixin):
-    number = PageNumberSerializer(required=False)
-
+class PageSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Page
-        fields = ('pk', 'title', 'number')
+        fields = ('pk', 'title')
 
 
 class DocumentSerializer(WritableNestedModelSerializer):
@@ -184,3 +175,20 @@ class DocumentSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.Document
         fields = ('pk', 'page', 'source')
+
+
+# Serializers for UniqueFieldsMixin
+
+class UFMChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = models.UFMChild
+        fields = ('pk', 'field')
+
+
+class UFMParentSerializer(WritableNestedModelSerializer):
+    child = UFMChildSerializer()
+
+    class Meta:
+        model = models.UFMParent
+        fields = ('pk', 'child')
+
