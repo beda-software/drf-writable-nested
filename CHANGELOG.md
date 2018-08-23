@@ -1,3 +1,7 @@
+## 0.5.0
+* Validation problem: `parent` isn't set for nested serializer's fields on the validation stage #1 (@kenny1992)
+* Validation problem: custom validation errors raised from the nested serializer have a wrong path #2 (@kenny1992)
+
 ## 0.4.3
 * Fix MultiValueDictKeyError for nested updates on reverse-relations  (@bakerf @projkov)
 
