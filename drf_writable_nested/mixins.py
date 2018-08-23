@@ -151,9 +151,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 save_kwargs[related_field.name] = instance
 
             new_related_instances = []
-            errors = [{} for i in range(len(related_data))]
+            errors = []
 
-            for index, data in enumerate(related_data):
+            for data in related_data:
                 obj = instances.get(
                     self._get_related_pk(data, field.Meta.model)
                 )
@@ -167,8 +167,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     related_instance = serializer.save(**save_kwargs)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
+                    errors.append({})
                 except ValidationError as exc:
-                    errors[index] = exc.detail
+                    errors.append(exc.detail)
 
             if any(errors):
                 if related_field.one_to_one:
