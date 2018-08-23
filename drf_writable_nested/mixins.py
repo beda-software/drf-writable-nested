@@ -64,10 +64,12 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         try:
             related_field = model_class._meta.get_field(field.source)
         except FieldDoesNotExist:
-            # If `related_name` is not set, field name does not include `_set` -> remove it and check again
+            # If `related_name` is not set, field name does not include
+            # `_set` -> remove it and check again
             default_postfix = '_set'
             if field.source.endswith(default_postfix):
-                related_field = model_class._meta.get_field(field.source[:-len(default_postfix)])
+                related_field = model_class._meta.get_field(
+                    field.source[:-len(default_postfix)])
             else:
                 raise
 
@@ -128,7 +130,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 continue
 
             if related_field.one_to_one:
-                # If an object already exists, fill in the pk so we don't try to duplicate it
+                # If an object already exists, fill in the pk so
+                # we don't try to duplicate it
                 pk_name = field.Meta.model._meta.pk.attname
                 if pk_name not in related_data and 'pk' in related_data:
                     pk_name = 'pk'
@@ -152,7 +155,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             new_related_instances = []
             errors = []
-
             for data in related_data:
                 obj = instances.get(
                     self._get_related_pk(data, field.Meta.model)

@@ -105,3 +105,33 @@ class UFMChild(models.Model):
 
 class UFMParent(models.Model):
     child = models.ForeignKey(UFMChild, on_delete=models.CASCADE)
+
+
+# Models for different relations
+
+class ForeignKeyChild(models.Model):
+    pass
+
+
+class ForeignKeyParent(models.Model):
+    child = models.ForeignKey(ForeignKeyChild,
+                              on_delete=models.CASCADE,
+                              related_name='parents')
+
+
+class OneToOneChild(models.Model):
+    pass
+
+
+class OneToOneParent(models.Model):
+    child = models.OneToOneField(OneToOneChild,
+                                 on_delete=models.CASCADE,
+                                 related_name='parent')
+
+
+class ManyToManyChild(models.Model):
+    pass
+
+
+class ManyToManyParent(models.Model):
+    children = models.ManyToManyField(ManyToManyChild, related_name='parents')

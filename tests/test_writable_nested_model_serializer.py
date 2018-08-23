@@ -700,45 +700,6 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual('next-key', custompks[1].slug)
         self.assertEqual(2, models.CustomPK.objects.count())
 
-    def test_custom_pk_unique(self):
-        data = {
-            'username': 'username',
-            'custompks': [
-                {'slug': 'custom-key'},
-                {'slug': 'custom-key-2'}
-            ]
-        }
-        serializer = serializers.UserWithCustomPKSerializer(
-            data=data,
-        )
-        self.assertTrue(serializer.is_valid())
-        user = serializer.save()
-
-        self.assertListEqual(
-            list(user.custompks.all().values_list('slug', flat=True)),
-            ['custom-key', 'custom-key-2']
-        )
-
-        data = {
-            'username': 'username',
-            'custompks': [
-                {'slug': 'custom-key-2'},
-                {'slug': 'custom-key-2'}
-            ]
-        }
-        serializer = serializers.UserWithCustomPKSerializer(
-            instance=user,
-            data=data,
-        )
-        self.assertTrue(serializer.is_valid())
-        with self.assertRaises(ValidationError) as context:
-            serializer.save()
-
-        self.assertIn('custompks', context.exception.detail)
-        self.assertEqual(len(context.exception.detail['custompks']), 2)
-        self.assertIn('slug', context.exception.detail['custompks'][0])
-        self.assertIn('slug', context.exception.detail['custompks'][1])
-
     def get_another_initial_data(self):
         return {
             'username': 'test',
@@ -894,42 +855,3 @@ class WritableNestedModelSerializerTest(TestCase):
 
         self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
         self.assertEqual(doc.page.title, 'some page')
-
-
-class UniqueFieldsMixinTestCase(TestCase):
-    def test_error_on_direct_relations(self):
-        page = models.Page.objects.create(title='page')
-        data = {
-            'page': {
-                'title': page.title
-            },
-            'source': get_sample_file(name='sample name')
-        }
-
-        serializer = serializers.DocumentSerializer(
-            data=data
-        )
-        serializer.is_valid(raise_exception=True)
-        with self.assertRaises(ValidationError) as context:
-            serializer.save()
-
-        self.assertIn('page', context.exception.detail)
-        self.assertIn('title', context.exception.detail['page'])
-
-    def test_error_on_one_to_one(self):
-        page_number = models.PageNumber.objects.create(number=1)
-
-        data = {
-            'title': 'page',
-            'number': {
-                'number': page_number.number
-            }
-        }
-
-        serializer = serializers.PageSerializer(data=data)
-        with self.assertRaises(ValidationError) as context:
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
-        self.assertIn('number', context.exception.detail)
-        self.assertIn('number', context.exception.detail['number'])

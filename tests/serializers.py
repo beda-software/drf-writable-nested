@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from drf_writable_nested import (
     WritableNestedModelSerializer, UniqueFieldsMixin, NestedCreateMixin)
 
@@ -192,3 +193,106 @@ class UFMParentSerializer(WritableNestedModelSerializer):
         model = models.UFMParent
         fields = ('pk', 'child')
 
+
+# Different relations
+
+
+class RaiseErrorMixin(serializers.ModelSerializer):
+    raise_error = serializers.BooleanField(required=False, default=False)
+
+    def save(self, **kwargs):
+        raise_error = self.validated_data.pop('raise_error', False)
+        if raise_error:
+            raise ValidationError({'raise_error': ['should be False']})
+
+        return super(RaiseErrorMixin, self).save(**kwargs)
+
+
+class DirectForeignKeyChildSerializer(RaiseErrorMixin,
+                                      serializers.ModelSerializer):
+    class Meta:
+        model = models.ForeignKeyChild
+        fields = ('id', 'raise_error',)
+
+
+class DirectForeignKeyParentSerializer(WritableNestedModelSerializer):
+    child = DirectForeignKeyChildSerializer()
+
+    class Meta:
+        model = models.ForeignKeyParent
+        fields = ('id', 'child',)
+
+
+class ReverseForeignKeyParentSerializer(RaiseErrorMixin,
+                                        serializers.ModelSerializer):
+    class Meta:
+        model = models.ForeignKeyParent
+        fields = ('id', 'raise_error',)
+
+
+class ReverseForeignKeyChildSerializer(WritableNestedModelSerializer):
+    parents = ReverseForeignKeyParentSerializer(many=True)
+
+    class Meta:
+        model = models.ForeignKeyChild
+        fields = ('id', 'parents',)
+
+
+class DirectOneToOneChildSerializer(RaiseErrorMixin,
+                                    serializers.ModelSerializer):
+    class Meta:
+        model = models.OneToOneChild
+        fields = ('id', 'raise_error',)
+
+
+class DirectOneToOneParentSerializer(WritableNestedModelSerializer):
+    child = DirectOneToOneChildSerializer()
+
+    class Meta:
+        model = models.OneToOneParent
+        fields = ('id', 'child',)
+
+
+class ReverseOneToOneParentSerializer(RaiseErrorMixin,
+                                      serializers.ModelSerializer):
+    class Meta:
+        model = models.OneToOneParent
+        fields = ('id', 'raise_error',)
+
+
+class ReverseOneToOneChildSerializer(WritableNestedModelSerializer):
+    parent = ReverseOneToOneParentSerializer()
+
+    class Meta:
+        model = models.OneToOneChild
+        fields = ('id', 'parent',)
+
+
+class DirectManyToManyChildSerializer(RaiseErrorMixin,
+                                      serializers.ModelSerializer):
+    class Meta:
+        model = models.ManyToManyChild
+        fields = ('id', 'raise_error',)
+
+
+class DirectManyToManyParentSerializer(WritableNestedModelSerializer):
+    children = DirectManyToManyChildSerializer(many=True)
+
+    class Meta:
+        model = models.ManyToManyParent
+        fields = ('id', 'children',)
+
+
+class ReverseManyToManyParentSerializer(RaiseErrorMixin,
+                                        serializers.ModelSerializer):
+    class Meta:
+        model = models.ManyToManyParent
+        fields = ('id', 'raise_error',)
+
+
+class ReverseManyToManyChildSerializer(WritableNestedModelSerializer):
+    parents = ReverseManyToManyParentSerializer(many=True)
+
+    class Meta:
+        model = models.ManyToManyChild
+        fields = ('id', 'parents',)
