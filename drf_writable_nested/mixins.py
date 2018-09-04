@@ -19,6 +19,7 @@ from rest_framework.settings import api_settings
 class BaseNestedModelSerializer(serializers.ModelSerializer):
 
     def get_unique_together_validators(self):
+        """Unique together validator needs to be disabled for Nested mixins to work properly."""
         return []
 
     def to_internal_value(self, data):
