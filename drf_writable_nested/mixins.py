@@ -18,6 +18,9 @@ from rest_framework.settings import api_settings
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
 
+    def get_unique_together_validators(self):
+        return []
+
     def to_internal_value(self, data):
         """
         Dict of native values <- Dict of primitive datatypes.
