@@ -562,7 +562,7 @@ class WritableNestedModelSerializerTest(TestCase):
                 'user_avatar': {},
             }
         )
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         with self.assertRaises(ValidationError):
             serializer.save()
 
