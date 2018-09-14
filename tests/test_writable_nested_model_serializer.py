@@ -2,6 +2,7 @@ import uuid
 from rest_framework.exceptions import ValidationError
 from django.test import TestCase
 from django.http.request import QueryDict
+from django.db import transaction
 
 from .utils import get_sample_file
 
@@ -357,10 +358,18 @@ class WritableNestedModelSerializerTest(TestCase):
 
         serializer.is_valid(raise_exception=True)
         with self.assertRaises(ValidationError):
-            serializer.save()
+            # TODO: remove transaction.atomic after #48 will be closed
+            with transaction.atomic():
+                serializer.save()
 
-        # Check that protected avatar haven't been deleted
-        self.assertEqual(models.Avatar.objects.count(), 3)
+        # Check that protected avatar hasn't been deleted
+        self.assertEqual(models.Avatar.objects.count(), 2)
+        self.assertSetEqual(
+            set(models.Avatar.objects.values_list('pk', flat=True)),
+            {
+                user.profile.avatars.first().id,
+                user.profile.avatars.last().id
+            })
 
     def test_update_with_empty_reverse_one_to_one(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
