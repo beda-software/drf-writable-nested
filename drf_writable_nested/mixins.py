@@ -80,7 +80,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _get_serializer_for_field(self, field, **kwargs):
         kwargs.update({
             'context': self.context,
-            'partial': self.partial,
+            'partial': self.partial if kwargs.get('instance') else False,
         })
         return field.__class__(**kwargs)
 

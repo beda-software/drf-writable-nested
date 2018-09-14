@@ -546,6 +546,26 @@ class WritableNestedModelSerializerTest(TestCase):
         # Old access key shouldn't be deleted
         self.assertEqual(models.AccessKey.objects.count(), 2)
 
+    def test_nested_partial_update_failed_with_empty_direct_fk_object(self):
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Check nested instances is None
+        self.assertIsNone(user.user_avatar)
+
+        serializer = serializers.UserSerializer(
+            instance=user,
+            partial=True,
+            data={
+                'username': 'new',
+                'user_avatar': {},
+            }
+        )
+        serializer.is_valid()
+        with self.assertRaises(ValidationError):
+            serializer.save()
+
     def test_update_with_generic_relation(self):
         item = models.TaggedItem.objects.create()
         serializer = serializers.TaggedItemSerializer(
