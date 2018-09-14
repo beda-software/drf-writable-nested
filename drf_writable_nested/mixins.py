@@ -91,13 +91,27 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             related_field.object_id_field_name: instance.pk,
         }
 
-    def prefetch_related_instances(self, field, related_data):
+    def _get_related_pk(self, data, model_class):
+        pk = data.get('pk') or data.get(model_class._meta.pk.attname)
+
+        if pk:
+            return str(pk)
+
+        return None
+
+    def _extract_related_pks(self, field, related_data):
         model_class = field.Meta.model
         pk_list = []
         for d in filter(None, related_data):
             pk = self._get_related_pk(d, model_class)
             if pk:
                 pk_list.append(pk)
+
+        return pk_list
+
+    def _prefetch_related_instances(self, field, related_data):
+        model_class = field.Meta.model
+        pk_list = self._extract_related_pks(field, related_data)
 
         instances = {
             str(related_instance.pk): related_instance
@@ -107,14 +121,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         }
 
         return instances
-
-    def _get_related_pk(self, data, model_class):
-        pk = data.get('pk') or data.get(model_class._meta.pk.attname)
-
-        if pk:
-            return str(pk)
-
-        return None
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
@@ -143,9 +149,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 # Expand to array of one item for one-to-one for uniformity
                 related_data = [related_data]
 
-            instances = self.prefetch_related_instances(field, related_data)
+            instances = self._prefetch_related_instances(field, related_data)
 
-            save_kwargs = self.get_save_kwargs(field_name)
+            save_kwargs = self._get_save_kwargs(field_name)
             if isinstance(related_field, GenericRelation):
                 save_kwargs.update(
                     self._get_generic_lookup(instance, related_field),
@@ -203,18 +209,18 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             try:
                 serializer.is_valid(raise_exception=True)
                 attrs[field_source] = serializer.save(
-                    **self.get_save_kwargs(field_name)
+                    **self._get_save_kwargs(field_name)
                 )
             except ValidationError as exc:
                 raise ValidationError({field_name: exc.detail})
 
     def save(self, **kwargs):
-        self.save_kwargs = defaultdict(dict, kwargs)
+        self._save_kwargs = defaultdict(dict, kwargs)
 
         return super(BaseNestedModelSerializer, self).save(**kwargs)
 
-    def get_save_kwargs(self, field_name):
-        save_kwargs = self.save_kwargs[field_name]
+    def _get_save_kwargs(self, field_name):
+        save_kwargs = self._save_kwargs[field_name]
         if not isinstance(save_kwargs, dict):
             raise TypeError(
                 _("Arguments to nested serializer's `save` must be dict's")
@@ -302,7 +308,8 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     related_field.name: instance,
                 }
 
-            current_ids = [d.get('pk') for d in related_data if d is not None]
+            current_ids = self._extract_related_pks(field, related_data)
+
             try:
                 pks_to_delete = list(
                     model_class.objects.filter(
