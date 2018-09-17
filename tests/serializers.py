@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drf_writable_nested import (
-    WritableNestedModelSerializer, UniqueFieldsMixin, NestedCreateMixin)
+    WritableNestedModelSerializer, UniqueFieldsMixin)
 
 from . import models
 
@@ -57,10 +57,11 @@ class ProfileSerializer(WritableNestedModelSerializer):
 class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer(required=False, allow_null=True)
+    user_avatar = AvatarSerializer(required=False, allow_null=True)
 
     class Meta:
         model = models.User
-        fields = ('pk', 'profile', 'username',)
+        fields = ('pk', 'profile', 'username', 'user_avatar')
 
 
 class CustomSerializer(UserSerializer):
