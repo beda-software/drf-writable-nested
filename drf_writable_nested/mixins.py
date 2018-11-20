@@ -41,6 +41,15 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         for field in fields:
             validate_method = getattr(self, 'validate_' + field.field_name, None)
             primitive_value = field.get_value(data)
+
+            if isinstance(primitive_value, str) and isinstance(field, serializers.HyperlinkedRelatedField):
+                # we need this because DRF HyperlinkedRelatedField is not fully compatible with Django 2.0+
+                # when dealing with spaces in the URL (e.g. when we do lookup by name).
+                # The issue has been reported and reopened, see the description here:
+                # - https://github.com/encode/django-rest-framework/issues/4748
+                # Once it is resolved there, we won't need this line anymore
+                primitive_value = unquote(primitive_value)
+
             try:
                 # For create only
                 if not self.partial and hasattr(self, 'initial_data') and isinstance(primitive_value, dict) \
