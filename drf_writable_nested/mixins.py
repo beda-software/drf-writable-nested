@@ -112,11 +112,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     # Skip field if field is not required
                     continue
 
-                if validated_data.get(field.source) is None:
-                    if direct:
-                        # Don't process null value for direct relations
-                        # Native create/update processes these values
-                        continue
+                if direct and field.source not in self.initial_data:
+                    # Field wasn't in the initial payload, likely a nested serializer with a default value
+                    continue
+
+                if direct and validated_data.get(field.source) is None:
+                    # Don't process null value for direct relations
+                    # Native create/update processes these values
+                    continue
 
                 validated_data.pop(field.source)
                 # Reversed one-to-one looks like direct foreign keys but they
