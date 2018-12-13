@@ -349,7 +349,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 data['pk'] = related_instance.pk
                 new_related_instances.append(related_instance)
 
-            if related_field.many_to_many:
+            # We check if the field was declared as a serializer for the through model.
+            # We only need to create new relations if it wasn't.
+            if related_field.many_to_many and field.Meta.model != related_field.remote_field.through:
                 # add() method is not used here for adding M2M instances
                 # because it doesn't support custom M2M proxy models
                 m2m_model_class = related_field.remote_field.through
