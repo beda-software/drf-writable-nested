@@ -223,7 +223,7 @@ https://github.com/beda-software/drf-writable-nested/issues/1
 http://www.django-rest-framework.org/api-guide/validators/#updating-nested-serializers
 
 ###### Example of usage:
-```
+```python
 class Child(models.Model):
     field = models.CharField(unique=True)
 
@@ -253,7 +253,7 @@ When you are using both mixins
 you should put `UniqueFieldsMixin` ahead.
 
 For example:
-```
+```python
 class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
         serializers.ModelSerializer):
 ```
