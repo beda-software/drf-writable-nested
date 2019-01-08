@@ -8,12 +8,22 @@ python:
 sudo: false
 
 env:
-    - DJANGO=1.9
-    - DJANGO=1.10
-    - DJANGO=1.11
-    - DJANGO=2.0
+    - DJANGO=1.9.x
+    - DJANGO=1.10.x
+    - DJANGO=1.11.x
+    - DJANGO=2.0.x
+    - DJANGO=2.1.x
 
 matrix:
+    exclude:
+    - python: '2.7'
+      env: DJANGO=2.0.x
+    - python: '2.7'
+      env: DJANGO=2.1.x
+    - python: '3.4'
+      env: DJANGO=2.0.x
+    - python: '3.4'
+      env: DJANGO=2.1.x
     fast_finish: true
 
 install:
