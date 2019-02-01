@@ -3,7 +3,9 @@ from collections import OrderedDict, defaultdict
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import ProtectedError, FieldDoesNotExist
+from django.db.models import (
+    ProtectedError, FieldDoesNotExist, SET_NULL, SET_DEFAULT
+)
 from django.db.models.fields.related import ForeignObjectRel
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
@@ -324,7 +326,17 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     m2m_manager = getattr(instance, field_source)
                     m2m_manager.remove(*pks_to_delete)
                 else:
-                    model_class.objects.filter(pk__in=pks_to_delete).delete()
+                    qs = model_class.objects.filter(pk__in=pks_to_delete)
+                    on_delete = related_field.remote_field.on_delete
+                    if on_delete in (SET_NULL, SET_DEFAULT):
+                        # TODO: handle on_delete.SET() ?
+                        if related_field.remote_field.on_delete == SET_DEFAULT:
+                            default = related_field.get_default()
+                        else:
+                            default = None
+                        qs.update(**{related_field.name: default})
+                    else:
+                        qs.delete()
 
             except ProtectedError as e:
                 instances = e.args[1]

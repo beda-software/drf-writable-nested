@@ -618,6 +618,96 @@ class WritableNestedModelSerializerTest(TestCase):
         self.assertEqual(1, item.tags.count())
         self.assertEqual('the_third_tag', item.tags.get().tag)
 
+    def test_update_foreign_key_with_set_null(self):
+        serializer = serializers.UserSetNullForeignKeySerializer(
+            data={
+                'username': 'test_update_foreign_key_with_set_null',
+                'set_null_foreignkeys': [{"name": "foo"}, {"name": "bar"}]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertEqual(
+            models.SetNullForeignKey.objects.count(),
+            2
+        )
+        set_null_foreignkeys = user.set_null_foreignkeys.values_list(
+            'name', flat=True
+        )
+        self.assertEqual(
+            [str(name) for name in set_null_foreignkeys],
+            ['foo', 'bar']
+        )
+
+        serializer = serializers.UserSetNullForeignKeySerializer(
+            instance=user,
+            data={
+                'pk': user.pk,
+                'username': 'test_update_foreign_key_with_set_null',
+                'set_null_foreignkeys': [{"name": "foo"}]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        # "bar" should not have been deleted
+        self.assertEqual(
+            models.SetNullForeignKey.objects.count(),
+            2
+        )
+        # "bar" should not be assigned to user
+        set_null_foreignkeys = user.set_null_foreignkeys.values_list(
+            'name', flat=True
+        )
+        self.assertEqual(
+            [str(name) for name in set_null_foreignkeys],
+            ['foo']
+        )
+
+    def test_update_foreign_key_with_set_default(self):
+        # create a default user with PK 666
+        default_user = models.User.objects.create(pk=666, username="666")
+
+        serializer = serializers.UserSetDefaultForeignKeySerializer(
+            data={
+                'username': 'test_update_foreign_key_with_set_default',
+                'set_default_foreignkeys': [{"name": "foo"}, {"name": "bar"}]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        self.assertEqual(
+            models.SetDefaultForeignKey.objects.count(),
+            2
+        )
+        set_default_foreignkeys = user.set_default_foreignkeys.values_list(
+            'name', flat=True
+        )
+        self.assertEqual(
+            [str(name) for name in set_default_foreignkeys],
+            ['foo', 'bar']
+        )
+
+        serializer = serializers.UserSetDefaultForeignKeySerializer(
+            instance=user,
+            data={
+                'pk': user.pk,
+                'username': 'test_update_foreign_key_with_set_default',
+                'set_default_foreignkeys': [{"name": "foo"}]
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        # "bar" should not have been deleted
+        self.assertEqual(
+            models.SetDefaultForeignKey.objects.count(),
+            2
+        )
+        # "bar" should have the user "666"
+        self.assertEqual(
+            str(default_user.username),
+            '666'
+        )
+
     def test_create_m2m_with_existing_related_objects(self):
         users = [
             models.User.objects.create(username='first user'),
