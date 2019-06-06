@@ -429,10 +429,6 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         'cannot_delete_protected': _(
             "Cannot delete {instances} because "
             "protected relation exists"),
-        'cannot_unlink_not_nullable_instances': _(
-            "Cannot unlink a nested instance from its parent instance "
-            "because it has a not-nullable key to the parent."
-        ),
     }
 
     def update(self, instance, validated_data):
@@ -529,4 +525,8 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     str(instance) for instance in instances]))
 
             except IntegrityError:
-                self.fail('cannot_unlink_not_nullable_instances')
+                raise Exception(f"Cannot unlink nested instances of '{field_name}' (related field '{related_field!r}', "
+                                f"{pks_to_unlink}) from its parent instance '{instance!r}' because they have "
+                                f"not-nullable keys to the parent. "
+                                f"If this is a many-to-many relationship, consider adding '{field_name}' "
+                                f"to Meta.allow_delete_on_update in the serializer.")
