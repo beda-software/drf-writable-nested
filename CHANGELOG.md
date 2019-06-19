@@ -1,3 +1,6 @@
+## 0.5.2
+* Feature: Enable support for nested polymorphic relations #81 (@csdenboer)
+
 ## 0.5.1
 * Fix: Validate nested field before creating it even in partial update (@yuekui) 
 * Fix some potential issues  in the delete phase for reverse relations update
