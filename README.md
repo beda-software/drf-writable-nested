@@ -264,4 +264,4 @@ class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
 
 Authors
 =======
-2014-2018, beda.software
+2014-2019, beda.software
