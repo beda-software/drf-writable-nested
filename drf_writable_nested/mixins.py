@@ -82,8 +82,16 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             'context': self.context,
             'partial': self.partial if kwargs.get('instance') else False,
         })
-        return field.__class__(**kwargs)
 
+        # if field is a polymorphic serializer
+        if hasattr(field, '_get_serializer_from_resource_type'):
+            # get 'real' serializer based on resource type
+            serializer = field._get_serializer_from_resource_type(kwargs.get('data').get('resourcetype'))
+
+            return serializer.__class__(**kwargs)
+        else:
+            return field.__class__(**kwargs)
+    
     def _get_generic_lookup(self, instance, related_field):
         return {
             related_field.content_type_field_name:
