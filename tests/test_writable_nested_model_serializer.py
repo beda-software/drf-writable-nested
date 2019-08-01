@@ -894,3 +894,36 @@ class WritableNestedModelSerializerTest(TestCase):
 
         self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
         self.assertEqual(doc.page.title, 'some page')
+
+
+class WritableNestedModelSerializerIssuesTest(TestCase):
+    def test_issue_86(self):
+        serializer = serializers.I86GenreSerializer(data={
+            'names': [
+                {
+                    'string': 'Genre'
+                }
+            ]
+        })
+        self.assertTrue(serializer.is_valid())
+        instance = serializer.save()
+        
+        update_serializer = serializers.I86GenreSerializer(
+            instance=instance, 
+            data={
+                'id': instance.pk, 
+                'names': [
+                    {
+                        'id': instance.names.first().pk,
+                        'string': 'Genre changed'
+                    }
+                ]
+            }
+        )
+        self.assertTrue(update_serializer.is_valid())
+        update_serializer.save()
+        self.assertEqual(serializer.data['id'], update_serializer.data['id'])
+        self.assertEqual(
+            serializer.data['names'][0]['id'], 
+            update_serializer.data['names'][0]['id'])
+

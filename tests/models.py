@@ -135,3 +135,15 @@ class ManyToManyChild(models.Model):
 
 class ManyToManyParent(models.Model):
     children = models.ManyToManyField(ManyToManyChild, related_name='parents')
+
+
+class I86Name(models.Model):
+    string = models.TextField()
+    item = models.ForeignKey(
+        'I86Genre', on_delete=models.CASCADE, related_name='names', 
+        blank=True, null=True)
+
+
+class I86Genre(models.Model):
+    pass
+

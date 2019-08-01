@@ -297,3 +297,17 @@ class ReverseManyToManyChildSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.ManyToManyChild
         fields = ('id', 'parents',)
+
+
+class I86GenreNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.I86Name
+        fields = ('id', 'string',)
+
+
+class I86GenreSerializer(WritableNestedModelSerializer):
+    names = I86GenreNameSerializer(many=True)
+
+    class Meta:
+        model = models.I86Genre
+        fields = ('id', 'names',)
