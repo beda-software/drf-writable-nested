@@ -86,12 +86,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         # if field is a polymorphic serializer
         if hasattr(field, '_get_serializer_from_resource_type'):
             # get 'real' serializer based on resource type
-            serializer = field._get_serializer_from_resource_type(kwargs.get('data').get('resourcetype'))
+            serializer = field._get_serializer_from_resource_type(
+                kwargs.get('data').get(field.resource_type_field_name)
+            )
 
             return serializer.__class__(**kwargs)
         else:
             return field.__class__(**kwargs)
-    
+
     def _get_generic_lookup(self, instance, related_field):
         return {
             related_field.content_type_field_name:
