@@ -6,3 +6,12 @@ __copyright__ = 'Copyright 2014-2018 beda.software'
 
 # Version synonym
 VERSION = __version__
+
+from django.core.exceptions import AppRegistryNotReady
+import warnings
+
+try:
+    from .mixins import NestedUpdateMixin, NestedCreateMixin, UniqueFieldsMixin
+    from .serializers import WritableNestedModelSerializer
+except AppRegistryNotReady as e:
+    warnings.warn("AppRegistryNotReady raised and catched", RuntimeWarning)
