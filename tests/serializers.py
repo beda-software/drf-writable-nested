@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from drf_writable_nested import (
-    WritableNestedModelSerializer, UniqueFieldsMixin)
+from drf_writable_nested.serializers import WritableNestedModelSerializer
+from drf_writable_nested.mixins import UniqueFieldsMixin
 
 from . import models
 

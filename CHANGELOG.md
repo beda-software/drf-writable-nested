@@ -1,3 +1,6 @@
+## 0.5.3
+* Support custom resource_type_field_name for polymorphic serialize (@tsaipoan)
+
 ## 0.5.2
 * Feature: Enable support for nested polymorphic relations #81 (@csdenboer)
 

@@ -63,7 +63,7 @@ We should create the following list of serializers:
 
 ```python
 from rest_framework import serializers
-from drf_writable_nested import WritableNestedModelSerializer
+from drf_writable_nested.serializers import WritableNestedModelSerializer
 
 
 class AvatarSerializer(serializers.ModelSerializer):
