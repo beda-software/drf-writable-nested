@@ -2,21 +2,7 @@ language: python
 
 dist: xenial
 
-python:
-    - "2.7"
-    - "3.5"
-    - "3.6"
-    - "3.7"
-
 sudo: false
-
-env:
-    - DJANGO=1.9
-    - DJANGO=1.10
-    - DJANGO=1.11
-    - DJANGO=2.0
-    - DJANGO=2.1
-    - DJANGO=2.2
 
 matrix:
     fast_finish: true
