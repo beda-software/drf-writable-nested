@@ -1,3 +1,6 @@
+## 0.5.4
+* Update UniqueFieldsMixin to support DRF 3.11 validator context API (@mands)
+
 ## 0.5.3
 * Support custom resource_type_field_name for polymorphic serialize (@tsaipoan)
 
