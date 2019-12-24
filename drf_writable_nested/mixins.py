@@ -333,6 +333,12 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     # Remove relations from m2m table
                     m2m_manager = getattr(instance, field_source)
                     m2m_manager.remove(*pks_to_delete)
+                elif related_field.many_to_one and related_field.null:
+                    # The instance should not be deleted if the object is foreign-key related.
+                    unlink_foreign_key = {
+                        related_field.name: None,
+                    }
+                    model_class.objects.filter(pk__in=pks_to_delete).update(**unlink_foreign_key)
                 else:
                     model_class.objects.filter(pk__in=pks_to_delete).delete()
 
