@@ -21,6 +21,13 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ('pk', 'message',)
 
 
+class PersistentMessageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.PersistentMessage
+        fields = ('pk', 'message',)
+
+
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
@@ -54,6 +61,13 @@ class ProfileSerializer(WritableNestedModelSerializer):
         fields = ('pk', 'sites', 'avatars', 'access_key', 'message_set',)
 
 
+class PersistentProfileSerializer(ProfileSerializer):
+    message_set = PersistentMessageSerializer(many=True)
+
+    class Meta(ProfileSerializer.Meta):
+        pass
+
+
 class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer(required=False, allow_null=True)
@@ -62,6 +76,13 @@ class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.User
         fields = ('pk', 'profile', 'username', 'user_avatar')
+
+
+class PersistentUserSerializer(WritableNestedModelSerializer):
+    profile = PersistentProfileSerializer(required=False, allow_null=True)
+
+    class Meta(UserSerializer.Meta):
+        pass
 
 
 class CustomSerializer(UserSerializer):

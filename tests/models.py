@@ -65,14 +65,24 @@ class CustomPK(models.Model):
     )
 
 
-class Message(models.Model):
+class AbstractMessage(models.Model):
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
         editable=False
     )
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     message = models.CharField(max_length=100)
+
+    class Meta:
+        abstract = True
+
+
+class Message(AbstractMessage):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+
+class PersistentMessage(AbstractMessage):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
 
 
 class AnotherProfile(models.Model):
