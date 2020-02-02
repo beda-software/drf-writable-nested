@@ -1,4 +1,6 @@
 import uuid
+
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -147,3 +149,90 @@ class I86Name(models.Model):
 class I86Genre(models.Model):
     pass
 
+
+class ReadOnlyChild(models.Model):
+    name = models.TextField()
+
+
+class ReadOnlyParent(models.Model):
+    child = models.ForeignKey(ReadOnlyChild, on_delete=models.CASCADE)
+
+
+class Child(models.Model):
+    name = models.TextField()
+
+
+class Parent(models.Model):
+    child = models.ForeignKey(Child, on_delete=models.CASCADE)
+
+
+class ParentMany(models.Model):
+    children = models.ManyToManyField(Child)
+
+
+class ReverseParent(models.Model):
+    pass
+
+
+class ReverseChild(models.Model):
+    name = models.TextField()
+    parent = models.ForeignKey(ReverseParent, on_delete=models.CASCADE, related_name='children')
+
+
+class ReverseManyParent(models.Model):
+    pass
+
+
+class ReverseManyChild(models.Model):
+    name = models.TextField()
+    parent = models.ManyToManyField(ReverseManyParent, related_name='children')
+
+
+class LookupChild(models.Model):
+    name = models.TextField()
+
+
+class LookupParent(models.Model):
+    child = models.ForeignKey(LookupChild, on_delete=models.CASCADE, related_name='parent')
+    child2 = models.ForeignKey(LookupChild, on_delete=models.CASCADE, related_name='parent2')
+
+
+class LookupReverseChild(models.Model):
+    name = models.TextField()
+    parent = models.ForeignKey(LookupParent, on_delete=models.CASCADE, related_name='children')
+
+
+class LookupOneToOneChild(models.Model):
+    name = models.TextField()
+    parent = models.OneToOneField(LookupParent, on_delete=models.CASCADE, related_name='one_to_one')
+
+
+class LookupGrandParent(models.Model):
+    child = models.ForeignKey(LookupParent, on_delete=models.CASCADE)
+
+
+class M2MTarget(models.Model):
+    name = models.TextField()
+
+
+class M2MSource(models.Model):
+    forward = models.ManyToManyField(M2MTarget, related_name='reverse')
+    name = models.TextField()
+
+
+class GrandParent(models.Model):
+    child = models.ForeignKey(Parent, on_delete=models.CASCADE)
+
+
+class ContextChild(models.Model):
+    name = models.TextField()
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+
+class NewUser (models.Model):
+    username = models.TextField()
+
+
+class NewProfile(models.Model):
+    user = models.OneToOneField(NewUser, on_delete=models.CASCADE, related_name='profile')
+    age = models.IntegerField()

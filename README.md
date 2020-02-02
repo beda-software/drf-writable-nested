@@ -228,6 +228,31 @@ py.test
 ```
 
 
+New-Style Serializers
+================
+
+In 2020, an enhanced set of mixins were added that permit fine-grained control of nested 
+Serializer behavior using a `match_on` argument.  New-style serializers delegate control 
+of the Create/Update behavior to the nested Serializer.  The parent Serializer need only
+resolve nested serializers in the right order; this is handled by the `RelatedSaveMixin`.
+
+New-style Serializers provide the following semantics:
+
+ - Get:  retrieve a matching object (but DO NOT update)
+ - Update:  retrieve and update a matching object
+ - Create:  create an object using the entire payload
+ - Combinations of the above e.g. GetOrCreate and UpdateOrCreate
+
+The matching of `data` to a specific `instance` is driven by a list of fields found in
+`match_on`.  This value is obtained from:
+
+ - the `match_on` kwarg provided when the field is initialized
+ - the DEFAULT_MATCH_ON class attribute
+
+The new-style Serializers may be used as top-level Serializers to provide get-or-create
+behaviors to DRF endpoints.  Examples of use can be found in 
+`test_nested_serializer_mixins.py`.
+
 Known problems with solutions
 =============================
 
