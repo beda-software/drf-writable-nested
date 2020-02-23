@@ -334,7 +334,13 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     m2m_manager = getattr(instance, field_source)
                     m2m_manager.remove(*pks_to_delete)
                 else:
-                    model_class.objects.filter(pk__in=pks_to_delete).delete()
+                    records_to_delete = model_class.objects.filter(pk__in=pks_to_delete)
+                    indv_delete = getattr(self.Meta, 'individual_delete', False)
+                    if indv_delete is True or (isinstance(indv_delete, list) and field_name in indv_delete):
+                        for record in records_to_delete:
+                            record.delete()
+                    else:
+                        records_to_delete.delete()
 
             except ProtectedError as e:
                 instances = e.args[1]
