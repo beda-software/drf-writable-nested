@@ -1,3 +1,6 @@
+## 0.6.0
+* Drop end-of-life Django versions, add Django 2.2 and 3.0, and Python 3.8 (@johnthagen)
+
 ## 0.5.4
 * Update UniqueFieldsMixin to support DRF 3.11 validator context API (@mands)
 
