@@ -1,6 +1,6 @@
 DRF Writable Nested
 ====================
-[![Build Status](https://travis-ci.org/beda-software/drf-writable-nested.svg?branch=master)](https://travis-ci.org/beda-software/drf-writable-nested)
+[![Build Status](https://travis-ci.com/beda-software/drf-writable-nested.svg?branch=master)](https://travis-ci.com/beda-software/drf-writable-nested)
 [![codecov](https://codecov.io/gh/beda-software/drf-writable-nested/branch/master/graph/badge.svg)](https://codecov.io/gh/beda-software/drf-writable-nested)
 [![pypi](https://img.shields.io/pypi/v/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 [![pyversions](https://img.shields.io/pypi/pyversions/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
@@ -17,9 +17,9 @@ The following relations are supported:
 Requirements
 ============
 
-- Python (2.7, 3.5, 3.6, 3.7)
-- Django (1.9, 1.10, 1.11, 2.0, 2.1, 2.2)
-- djangorestframework (3.5+)
+- Python (3.5, 3.6, 3.7, 3.8)
+- Django (2.2, 2.3, 3.0)
+- djangorestframework (3.8+)
 
 Installation
 ============
@@ -264,4 +264,4 @@ class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
 
 Authors
 =======
-2014-2019, beda.software
+2014-2020, beda.software
