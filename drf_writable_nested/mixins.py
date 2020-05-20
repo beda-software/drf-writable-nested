@@ -289,6 +289,9 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         return instance
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
+        # Bypass deletion if set to partial update
+        if self.partial:
+            return
         # Reverse `reverse_relations` for correct delete priority
         reverse_relations = OrderedDict(
             reversed(list(reverse_relations.items())))
