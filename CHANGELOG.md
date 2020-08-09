@@ -1,3 +1,6 @@
+## 0.6.1
+* Add support for Django 3.1 #115 (@LeeHanYeong)
+
 ## 0.6.0
 * Drop end-of-life Django versions, add Django 2.2 and 3.0, and Python 3.8 (@johnthagen)
 
