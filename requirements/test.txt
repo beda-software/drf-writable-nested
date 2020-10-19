@@ -1,0 +1,4 @@
+-r base.txt
+
+django==2.2.13
+djangorestframework==3.10.3

@@ -211,6 +211,15 @@ print(user.profile.access_key.key)
 Note: The same value will be used for all nested instances like default value but with higher priority.
 
 
+Testing
+=======
+To run unit tests, run:
+```bash
+pip install -r requirements/test.txt
+pytest
+```
+
+
 Known problems with solutions
 =============================
 

@@ -1,8 +1,11 @@
 import uuid
-from rest_framework.exceptions import ValidationError
 from django.test import TestCase
 from django.http.request import QueryDict
 from django.db import transaction
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APITestCase
 
 from .utils import get_sample_file
 
@@ -927,3 +930,46 @@ class WritableNestedModelSerializerIssuesTest(TestCase):
             serializer.data['names'][0]['id'], 
             update_serializer.data['names'][0]['id'])
 
+
+class WritableNestedModelSerializerAPITest(APITestCase):
+    def test_update_nested_included_in_response(self):
+        serializer = serializers.UserSerializer(
+            data=WritableNestedModelSerializerTest().get_initial_data()
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Check instances count
+        self.assertEqual(user.profile.avatars.count(), 2)
+
+        # Add an avatar
+        url = reverse('user-detail', args=[str(user.pk)])
+        user_pk = user.pk
+        profile_pk = user.profile.pk
+        user_data = {
+            'pk': user_pk,
+            'username': 'new',
+            'profile': {
+                'pk': profile_pk,
+                'avatars': [
+                    {
+                        'pk': user.profile.avatars.earliest('pk').pk,
+                        'image': 'old-image-1.png',
+                    },
+                    {
+                        'image': 'new-image-1.png',
+                    },
+                    {
+                        'image': 'new-image-2.png',
+                    },
+                ],
+            },
+        }
+        response = self.client.patch(
+            url,
+            user_data,
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['profile']['avatars']), 3)
+        self.assertEqual(user.profile.avatars.count(), 3)
