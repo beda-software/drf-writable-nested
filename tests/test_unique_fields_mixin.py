@@ -77,3 +77,4 @@ class UniqueFieldsMixinTestCase(TestCase):
             partial=True
         )
         self.assertTrue(serializer.is_valid())
+        serializer.save()
