@@ -1,8 +1,4 @@
-from rest_framework import routers
+# This file is only needed to allow for migrations.
+# manage.py requires an app to have a urls.py
 
-from . import views
-
-router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet)
-
-urlpatterns = router.urls
+urlpatterns = []

@@ -1,1 +1,4 @@
--r requirements/base.txt
+# PyTest for running the tests.
+pytest==5.4.1
+pytest-django==3.9.0
+pytest-cov==2.8.1

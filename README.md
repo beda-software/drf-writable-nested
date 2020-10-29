@@ -215,8 +215,8 @@ Testing
 =======
 To run unit tests, run:
 ```bash
-pip install -r requirements/test.txt
-pytest
+pip install tox
+tox -e py37-dj22-drf38
 ```
 
 

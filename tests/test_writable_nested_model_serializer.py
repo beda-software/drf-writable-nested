@@ -943,7 +943,6 @@ class WritableNestedModelSerializerAPITest(APITestCase):
         self.assertEqual(user.profile.avatars.count(), 2)
 
         # Add an avatar
-        url = reverse('user-detail', args=[str(user.pk)])
         user_pk = user.pk
         profile_pk = user.profile.pk
         user_data = {
@@ -965,11 +964,12 @@ class WritableNestedModelSerializerAPITest(APITestCase):
                 ],
             },
         }
-        response = self.client.patch(
-            url,
-            user_data,
-            format='json',
+
+        update_serializer = serializers.UserSerializer(
+            data=user_data,
+            partial=True
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['profile']['avatars']), 3)
+        update_serializer.is_valid(raise_exception=True)
+        user = update_serializer.save()
         self.assertEqual(user.profile.avatars.count(), 3)
+
