@@ -68,3 +68,13 @@ class UniqueFieldsMixinTestCase(TestCase):
             ctx.exception.detail,
             {'child': {'field': ['This field must be unique.']}}
         )
+
+    def test_unique_field_not_required_for_partial_updates(self):
+        child = models.UFMChild.objects.create(field='value')
+        serializer = serializers.UFMChildSerializer(
+            instance=child,
+            data={},
+            partial=True
+        )
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
