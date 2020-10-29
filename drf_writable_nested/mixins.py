@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict, Mapping
+from urllib.parse import urlparse, unquote
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -7,7 +8,6 @@ from django.db.models import FieldDoesNotExist, ProtectedError
 from django.db.models.fields.related import ForeignObjectRel
 from django.db.utils import IntegrityError
 from django.urls import Resolver404, resolve
-from django.utils.six.moves.urllib.parse import urlparse, unquote
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
