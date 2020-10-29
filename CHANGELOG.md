@@ -1,3 +1,8 @@
+## 0.6.2
+* Fix: Refresh from DB when updating nested object #122 (@pcarn)
+* Fix: UniqueFieldsMixin validation optional for partial update #117 (@robinchow)
+* Add Django 3.1 to CI tests (@johnthagen)
+
 ## 0.6.1
 * Add support for Django 3.1 #115 (@LeeHanYeong)
 
