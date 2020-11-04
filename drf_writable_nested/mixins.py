@@ -4,7 +4,7 @@ from urllib.parse import urlparse, unquote
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import FieldDoesNotExist, ProtectedError
+from django.db.models import ProtectedError
 from django.db.models.fields.related import ForeignObjectRel
 from django.db.utils import IntegrityError
 from django.urls import Resolver404, resolve
@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import set_value, SkipField, get_error_detail
-from django.core.exceptions import ValidationError as DjangoValidationError, ObjectDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ValidationError as DjangoValidationError, ObjectDoesNotExist
 from rest_framework.settings import api_settings
 
 
