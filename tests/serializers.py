@@ -1,3 +1,4 @@
+from typing import Sequence
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drf_writable_nested.serializers import WritableNestedModelSerializer
@@ -61,7 +62,8 @@ class UserSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = models.User
-        fields = ('pk', 'profile', 'username', 'user_avatar')
+        # Explicit type so that mypy doesn't complain later about a longer Tuple
+        fields: Sequence[str] = ('pk', 'profile', 'username', 'user_avatar')
 
 
 class CustomSerializer(UserSerializer):
@@ -69,7 +71,7 @@ class CustomSerializer(UserSerializer):
     custom_field = serializers.CharField()
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + (
+        fields = tuple(UserSerializer.Meta.fields) + (
             'custom_field',
         )
 
