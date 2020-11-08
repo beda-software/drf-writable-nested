@@ -1,1 +1,1 @@
-djangorestframework-stubs==1.3.0
+djangorestframework-stubs
