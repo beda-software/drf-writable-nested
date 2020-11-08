@@ -63,7 +63,7 @@ class UserSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.User
         # Explicit type so that mypy doesn't complain later about a longer Tuple
-        fields: Sequence[str] = ('pk', 'profile', 'username', 'user_avatar')
+        fields = ('pk', 'profile', 'username', 'user_avatar') # type: Sequence[str]
 
 
 class CustomSerializer(UserSerializer):
