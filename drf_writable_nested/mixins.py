@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
+from typing import List
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -382,7 +383,7 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
     (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
     you should put `UniqueFieldsMixin` ahead.
     """
-    _unique_fields = []
+    _unique_fields: List[str] = []
 
     def get_fields(self):
         self._unique_fields = []

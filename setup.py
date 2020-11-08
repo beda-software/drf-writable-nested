@@ -34,6 +34,10 @@ setup(
     author='beda.software',
     author_email='drfwritablenested@beda.software',
     packages=['drf_writable_nested'],
+    package_data = {
+        'drf_writable_nested': ['py.typed'],
+    },
+    include_package_data=True,
     zip_safe=False,
     python_requires='>=3.5',
     classifiers=[

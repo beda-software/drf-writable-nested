@@ -50,13 +50,13 @@ class AccessKey(models.Model):
 
 class Profile(models.Model):
     sites = models.ManyToManyField(Site)
-    user = models.OneToOneField(User)
-    access_key = models.ForeignKey(AccessKey, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    access_key = models.ForeignKey(AccessKey, null=True, on_delete=models.CASCADE)
 
 
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
-    profile = models.ForeignKey(Profile, related_name='avatars')
+    profile = models.ForeignKey(Profile, related_name='avatars', on_delete=models.CASCADE)
 ```
 
 We should create the following list of serializers:

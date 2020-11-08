@@ -1,0 +1,1 @@
+Stripped down example projects, based on top-level README
