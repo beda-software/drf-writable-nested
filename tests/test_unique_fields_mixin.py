@@ -1,5 +1,5 @@
 from django.test import TestCase
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, ErrorDetail
 
 from . import (
     models,
@@ -35,6 +35,13 @@ class UniqueFieldsMixinTestCase(TestCase):
         child = models.UFMChild.objects.create(field='value')
         parent = models.UFMParent.objects.create(child=child)
 
+        default_error_detail = ErrorDetail(
+            string='ufm child with this field already exists.',
+            code='unique')
+        unique_message_error_detail = ErrorDetail(
+            string=serializers.UNIQUE_ERROR_MESSAGE,
+            code='unique'
+        )
         serializer = serializers.UFMParentSerializer(
             data={
                 'child': {
@@ -48,7 +55,7 @@ class UniqueFieldsMixinTestCase(TestCase):
             serializer.save()
         self.assertEqual(
             ctx.exception.detail,
-            {'child': {'field': ['This field must be unique.']}}
+            {'child': {'field': [default_error_detail]}}
         )
 
         serializer = serializers.UFMParentSerializer(
@@ -66,7 +73,23 @@ class UniqueFieldsMixinTestCase(TestCase):
             serializer.save()
         self.assertEqual(
             ctx.exception.detail,
-            {'child': {'field': ['This field must be unique.']}}
+            {'child': {'field': [default_error_detail]}}
+        )
+
+        serializer = serializers.UFMParentSerializerForValidatorMessage(
+            data={
+                'child': {
+                    'field': child.field,
+                }
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        with self.assertRaises(ValidationError) as ctx:
+            serializer.save()
+        self.assertEqual(
+            ctx.exception.detail,
+            {'child': {'field': [unique_message_error_detail]}}
         )
 
     def test_unique_field_not_required_for_partial_updates(self):

@@ -1,10 +1,14 @@
 from typing import Sequence
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
+
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_writable_nested.mixins import UniqueFieldsMixin
 
 from . import models
+
+UNIQUE_ERROR_MESSAGE = 'The value is existed'
 
 
 class AvatarSerializer(serializers.ModelSerializer):
@@ -189,8 +193,29 @@ class UFMChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
         fields = ('pk', 'field')
 
 
+class UFMChildSerializerForValidatorMessage(UniqueFieldsMixin,
+                                            serializers.ModelSerializer):
+    field = serializers.CharField(validators=[
+        UniqueValidator(queryset=models.UFMChild.objects.all(),
+                        message=UNIQUE_ERROR_MESSAGE
+                        )
+    ])
+
+    class Meta:
+        model = models.UFMChild
+        fields = ('pk', 'field')
+
+
 class UFMParentSerializer(WritableNestedModelSerializer):
     child = UFMChildSerializer()
+
+    class Meta:
+        model = models.UFMParent
+        fields = ('pk', 'child')
+
+
+class UFMParentSerializerForValidatorMessage(WritableNestedModelSerializer):
+    child = UFMChildSerializerForValidatorMessage()
 
     class Meta:
         model = models.UFMParent
