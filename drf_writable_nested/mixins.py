@@ -383,7 +383,7 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
     (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
     you should put `UniqueFieldsMixin` ahead.
     """
-    _unique_fields = []  # type: List[Tuple[str,type(UniqueValidator)]]
+    _unique_fields = []  # type: List[Tuple[str,UniqueValidator]]
 
     def get_fields(self):
         self._unique_fields = []
