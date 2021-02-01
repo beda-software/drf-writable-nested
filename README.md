@@ -215,8 +215,16 @@ Testing
 =======
 To run unit tests, run:
 ```bash
-pip install tox
-tox -e py37-dj22-drf38
+# Setup the virtual environment
+python3 -m venv envname
+source envname/bin/activate
+
+pip install django
+pip install django-rest-framework
+pip install -r requirements.txt
+
+# Run tests
+py.test
 ```
 
 
@@ -273,4 +281,4 @@ class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
 
 Authors
 =======
-2014-2020, beda.software
+2014-2021, beda.software
