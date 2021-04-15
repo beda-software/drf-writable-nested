@@ -38,7 +38,7 @@ class BaseNestedListSerializer(serializers.ListSerializer):
 class BaseNestedModelSerializer(serializers.ModelSerializer):
     @classmethod
     def many_init(cls, *args, **kwargs):
-        # Allow overriding of list_serializer_class, else use BaseNestedListSerializer
+        # Allow overriding of list_serializer_class, default to BaseNestedListSerializer
         if not getattr(cls.Meta, 'list_serializer_class', None):
             cls.Meta.list_serializer_class = BaseNestedListSerializer
         return super(BaseNestedModelSerializer, cls).many_init(*args, **kwargs)
