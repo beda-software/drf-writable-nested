@@ -208,7 +208,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 m2m_manager = getattr(instance, field_source)
                 m2m_manager.add(*new_related_instances)
 
-    def update_or_create_direct_relations(self, attrs, relations, inital_data):
+    def update_or_create_direct_relations(self, attrs, relations, inital_data=None):
+        inital_data = inital_data or self.get_initial()
         for field_name, (field, field_source) in relations.items():
             obj = None
             data = inital_data[field_name]
