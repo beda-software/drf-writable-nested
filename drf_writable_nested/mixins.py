@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
 from typing import List
+from copy import deepcopy
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -14,6 +15,11 @@ from rest_framework.validators import UniqueValidator
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        self._save_kwargs = defaultdict(dict, kwargs)
+        super().__init__(*args, **kwargs)
+
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
@@ -202,10 +208,10 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 m2m_manager = getattr(instance, field_source)
                 m2m_manager.add(*new_related_instances)
 
-    def update_or_create_direct_relations(self, attrs, relations):
+    def update_or_create_direct_relations(self, attrs, relations, inital_data):
         for field_name, (field, field_source) in relations.items():
             obj = None
-            data = self.get_initial()[field_name]
+            data = inital_data[field_name]
             model_class = field.Meta.model
             pk = self._get_related_pk(data, model_class)
             if pk:
@@ -246,12 +252,13 @@ class NestedCreateMixin(BaseNestedModelSerializer):
     Adds nested create feature
     """
     def create(self, validated_data):
+        inital_data = deepcopy(validated_data)
         relations, reverse_relations = self._extract_relations(validated_data)
-
         # Create or update direct relations (foreign key, one-to-one)
         self.update_or_create_direct_relations(
             validated_data,
             relations,
+            inital_data,
         )
 
         # Create instance
