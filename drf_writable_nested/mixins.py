@@ -291,6 +291,14 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         instance.refresh_from_db()
         return instance
 
+    def perform_nested_delete(self, pks_to_delete, model_class, instance, related_field, field_source):
+        if related_field.many_to_many:
+            # Remove relations from m2m table
+            m2m_manager = getattr(instance, field_source)
+            m2m_manager.remove(*pks_to_delete)
+        else:
+            model_class.objects.filter(pk__in=pks_to_delete).delete()
+
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority
         reverse_relations = OrderedDict(
@@ -331,13 +339,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                         pk__in=current_ids
                     ).values_list('pk', flat=True)
                 )
-
-                if related_field.many_to_many:
-                    # Remove relations from m2m table
-                    m2m_manager = getattr(instance, field_source)
-                    m2m_manager.remove(*pks_to_delete)
-                else:
-                    model_class.objects.filter(pk__in=pks_to_delete).delete()
+                self.perform_nested_delete(pks_to_delete, model_class, instance, related_field, field_source)
 
             except ProtectedError as e:
                 instances = e.args[1]
