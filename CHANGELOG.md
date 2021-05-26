@@ -1,3 +1,8 @@
+## 0.6.3
+* Support django 3.2 and python 3.9 #142
+* Make nested object deletion extensible #143 (@kavdev)
+* Support extended validator with message and other props for UniqueFieldsMixin (@starryrbs)
+
 ## 0.6.2
 * Fix: Refresh from DB when updating nested object #122 (@pcarn)
 * Fix: UniqueFieldsMixin validation optional for partial update #117 (@robinchow)
