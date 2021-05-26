@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
-from typing import List
+from typing import List, Tuple
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -383,17 +383,19 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
     (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
     you should put `UniqueFieldsMixin` ahead.
     """
-    _unique_fields = [] # type: List[str]
+    _unique_fields = []  # type: List[Tuple[str,UniqueValidator]]
 
     def get_fields(self):
         self._unique_fields = []
 
         fields = super(UniqueFieldsMixin, self).get_fields()
         for field_name, field in fields.items():
-            is_unique = any([isinstance(validator, UniqueValidator)
-                             for validator in field.validators])
-            if is_unique:
-                self._unique_fields.append(field_name)
+            unique_validators = [validator
+                                 for validator in field.validators
+                                 if isinstance(validator, UniqueValidator)]
+            if unique_validators:
+                # 0 means only take the first one UniqueValidator
+                self._unique_fields.append((field_name, unique_validators[0]))
                 field.validators = [
                     validator for validator in field.validators
                     if not isinstance(validator, UniqueValidator)]
@@ -401,17 +403,18 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
         return fields
 
     def _validate_unique_fields(self, validated_data):
-        for field_name in self._unique_fields:
+        for unique_field in self._unique_fields:
+            field_name, unique_validator = unique_field
             if self.partial and field_name not in validated_data:
                 continue
-            unique_validator = UniqueValidator(self.Meta.model.objects.all())
             try:
                 # `set_context` removed on DRF >= 3.11, pass in via __call__ instead
                 if hasattr(unique_validator, 'set_context'):
                     unique_validator.set_context(self.fields[field_name])
                     unique_validator(validated_data[field_name])
                 else:
-                    unique_validator(validated_data[field_name], self.fields[field_name])
+                    unique_validator(validated_data[field_name],
+                                     self.fields[field_name])
             except ValidationError as exc:
                 raise ValidationError({field_name: exc.detail})
 
