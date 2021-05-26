@@ -26,6 +26,13 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ('pk', 'message',)
 
 
+class PersistentMessageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.PersistentMessage
+        fields = ('pk', 'message',)
+
+
 class SiteSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
 
@@ -59,6 +66,13 @@ class ProfileSerializer(WritableNestedModelSerializer):
         fields = ('pk', 'sites', 'avatars', 'access_key', 'message_set',)
 
 
+class PersistentProfileSerializer(ProfileSerializer):
+    message_set = PersistentMessageSerializer(many=True)
+
+    class Meta(ProfileSerializer.Meta):
+        pass
+
+
 class UserSerializer(WritableNestedModelSerializer):
     # Reverse OneToOne relation
     profile = ProfileSerializer(required=False, allow_null=True)
@@ -68,6 +82,13 @@ class UserSerializer(WritableNestedModelSerializer):
         model = models.User
         # Explicit type so that mypy doesn't complain later about a longer Tuple
         fields = ('pk', 'profile', 'username', 'user_avatar') # type: Sequence[str]
+
+
+class PersistentUserSerializer(WritableNestedModelSerializer):
+    profile = PersistentProfileSerializer(required=False, allow_null=True)
+
+    class Meta(UserSerializer.Meta):
+        pass
 
 
 class CustomSerializer(UserSerializer):

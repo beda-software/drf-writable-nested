@@ -227,6 +227,49 @@ class WritableNestedModelSerializerTest(TestCase):
         # Sites shouldn't be deleted either as it is M2M
         self.assertEqual(models.Site.objects.count(), 3)
 
+    def test_update_no_delete_if_null_is_false(self):
+        serializer = serializers.UserSerializer(data=self.get_initial_data())
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Check instances count
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Message.objects.count(), 3)
+
+        # Update
+        user_pk = user.pk
+        profile_pk = user.profile.pk
+
+        serializer = serializers.PersistentUserSerializer(
+            data={
+                'pk': user_pk,
+                'username': 'new',
+                'profile': {
+                    'pk': profile_pk,
+                    'access_key': None,
+                    'sites': [
+                        {
+                            'url': 'http://new-site.com',
+                        },
+                    ],
+                    'avatars': [
+                    ],
+                    'message_set': [
+                    ],
+                },
+            },
+            instance=user,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        user.refresh_from_db()
+
+        # Check instances count
+        self.assertEqual(models.User.objects.count(), 1)
+        self.assertEqual(models.Avatar.objects.count(), 0)
+        self.assertEqual(models.Message.objects.count(), 3)
+
     def test_update_reverse_one_to_one_without_pk(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)
