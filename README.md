@@ -231,7 +231,7 @@ py.test
 New-Style Serializers
 ================
 
-In 2020, an enhanced set of mixins were added that permit fine-grained control of nested 
+In 2021, an enhanced set of mixins were added that permit fine-grained control of nested 
 Serializer behavior using a `match_on` argument.  New-style serializers delegate control 
 of the Create/Update behavior to the nested Serializer.  The parent Serializer need only
 resolve nested serializers in the right order; this is handled by the `RelatedSaveMixin`.
@@ -252,6 +252,33 @@ The matching of `data` to a specific `instance` is driven by a list of fields fo
 The new-style Serializers may be used as top-level Serializers to provide get-or-create
 behaviors to DRF endpoints.  Examples of use can be found in 
 `test_nested_serializer_mixins.py`.
+
+Migration
+---------
+
+To convert an existing serializer to the new style serializers, the following procedure 
+is recommended:
+
+1. Convert nested serializers by replacing `serializers.ModelSerializer` with 
+`UpdateOrCreateNestedSerializerMixin, serializers.ModelSerializer` which preserves 
+backwards-compatible behavior.
+1. Convert parent serializer by replacing `WritableNestedModelSerializer` with 
+`RelatedSaveMixin, serializers.ModelSerializer`.
+1. Verify that your test cases still pass.
+1. Modify serializers (and test cases) to new-style behavior.  For example, add an 
+explicit `match_on` or switch the mixin to an alternative behavior like 
+`GetOrCreateNestedSerializerMixin`.
+
+All test cases were duplicated for new-style serializers so you can see examples of 
+converted serializers in `tests/serializers.py`.  For example `TeamSerializer` and 
+`UserSerializer` become `NewTeamSerializer` and `NewUserSerializer`.   Examples of 
+`DEFAULT_MATCH_ON` can be found in `tests/serializers.py`.  One example of an explicit
+specified `match_on` is present, but non-default `match_on` values are not found in 
+`tests` because they were not required to produce existing behaviors. 
+
+NOTE:  While `RelatedSaveMixin` is the backwards-compatible mixin for the top-level
+class, it is also possible to use other mixins to get complex matching behavior without
+modifying the view.
 
 Known problems with solutions
 =============================
