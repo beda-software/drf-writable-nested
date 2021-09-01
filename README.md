@@ -276,8 +276,86 @@ class ChildSerializer(UniqueFieldsMixin, NestedUpdateMixin,
         serializers.ModelSerializer):
 ```
 
+##### Update problem for nested fields with form-data in `PATCH` and `PUT` methods
+There is a special problem while we try to update any model object with nested fields
+within it via `PUT` or `PATCH` using form-data we can not update it. And it complains
+about fields not provided. So far, we came to know that this is also a problem in DRF.
+But we can follow a tricky way to solve it at least for now.
+See the below solution about the problem
+
+If you want more details, you can read related issues and articles:
+https://github.com/beda-software/drf-writable-nested/issues/106
+https://github.com/encode/django-rest-framework/issues/7262#issuecomment-737364846
+
+###### Example:
+```python
+
+# Models
+class Voucher(models.Model):
+    voucher_number = models.CharField(verbose_name="voucher number", max_length=10, default='')
+    image = models.ImageField(upload_to="vouchers/images/", null=True, blank=True)
+
+class VoucherRow(models.Model):
+    voucher = models.ForeignKey(to='voucher.Voucher', on_delete=models.PROTECT, verbose_name='voucher',
+                                related_name='voucherrows', null=True)
+    account = models.CharField(verbose_name="fortnox account number", max_length=255)
+    debit = models.DecimalField(verbose_name="amount", decimal_places=2, default=0.00, max_digits=12)
+    credit = models.DecimalField(verbose_name="amount", decimal_places=2, default=0.00, max_digits=12)
+    description = models.CharField(verbose_name="description", max_length=100, null=True, blank=True)
+
+# Serializers for these models
+class VoucherRowSerializer(WritableNestedModelSerializer):
+    class Meta:
+        model = VoucherRow
+        fields = ('id', 'account', 'debit', 'credit', 'description',)
 
 
+class VoucherSerializer(serializers.ModelSerializer):
+    voucherrows = VoucherRowSerializer(many=True, required=False, read_only=True)
+    class Meta:
+        model = Voucher
+        fields = ('id', 'participants', 'voucher_number', 'voucherrows', 'image')
+
+```
+
+Now if you want to update `Voucher` with `VoucherRow` and voucher image then you need to do it
+using form-data via `PUT` or `PATCH` request where your `voucherrows` fields are nested field.
+With the current implementation of the `drf-writable-nested` doesn't update it. Because it does
+not support something like-
+
+```text
+voucherrows[1].account=1120
+voucherrows[1].debit=1000.00
+voucherrows[1].credit=0.00
+voucherrows[1].description='Debited from Bank Account' 
+voucherrows[2].account=1130
+voucherrows[1].debit=0.00
+voucherrows[1].credit=1000.00
+voucherrows[1].description='Credited to Cash Account'
+
+```
+This is not supported at least for now. So, we can achieve the result in a different way.
+Instead of sending the array fields separately in this way we can convert the whole fields
+along with values in a `json` string like below and set it as value to the field `voucherrows`.
+
+```json
+"[{\"account\": 1120, \"debit\": 1000.00, \"credit\": 0.00, \"description\": \"Debited from Bank Account\"}, {\"account\": 1130, \"debit\": 0.00, \"credit\": 1000.00, \"description\": \"Credited to Cash Account\"}]"
+```
+
+Now it'll be actually sent as a single field value to the application for the field `voucherrows`.
+From your `views` you need to parse it like below before sending it to the serializer-
+
+```python
+class VoucherViewSet(viewsets.ModelViewSet):
+    serializer_class = VoucherSerializer
+    queryset = serializer_class.Meta.model.objects.all().order_by('-created_at')
+    
+    def update(self, request, *args, **kwargs):
+        request.data.update({'voucherrows': json.loads(request.data.pop('voucherrows', None))})
+        return super().update(request, *args, **kwargs)
+```
+Now, you'll get the `voucherrows` field with data in the right format in your serializers.
+Similar approach will be also applicable for generic views for django rest framework
 
 Authors
 =======
