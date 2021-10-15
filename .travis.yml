@@ -12,6 +12,7 @@ matrix:
       - { python: "3.6", env: DJANGO=2.2 }
       - { python: "3.6", env: DJANGO=3.0 }
       - { python: "3.6", env: DJANGO=3.1 }
+      - { python: "3.6", env: DJANGO=3.2 }
 
       - { python: "3.7", env: DJANGO=2.2 }
       - { python: "3.7", env: DJANGO=3.0 }
@@ -20,6 +21,10 @@ matrix:
       - { python: "3.8", env: DJANGO=2.2 }
       - { python: "3.8", env: DJANGO=3.0 }
       - { python: "3.8", env: DJANGO=3.1 }
+      - { python: "3.8", env: DJANGO=3.2 }
+
+      - { python: "3.9", env: DJANGO=3.1 }
+      - { python: "3.9", env: DJANGO=3.2 }
 
 install:
     - pip install tox tox-travis
