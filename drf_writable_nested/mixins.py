@@ -185,6 +185,10 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 try:
                     serializer.is_valid(raise_exception=True)
                     related_instance = serializer.save(**save_kwargs)
+                    if not hasattr(self, 'nodelete_pks'):
+                        self.nodelete_pks = {}
+                    self.nodelete_pks[field_name] = self.nodelete_pks.get(field_name, [])
+                    self.nodelete_pks[field_name].append(related_instance.pk)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
                     errors.append({})
@@ -329,7 +333,13 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     related_field.name: instance,
                 }
 
-            current_ids = self._extract_related_pks(field, related_data)
+            if not hasattr(self, 'nodelete_pks'):
+                current_ids = self._extract_related_pks(field, related_data)
+            else:
+                current_ids = self.nodelete_pks.get(
+                    field_name, 
+                    self._extract_related_pks(field, related_data)
+                )
 
             try:
                 pks_to_delete = list(
