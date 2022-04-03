@@ -1,6 +1,5 @@
 DRF Writable Nested
 ====================
-[![Build Status](https://travis-ci.com/beda-software/drf-writable-nested.svg?branch=master)](https://travis-ci.com/beda-software/drf-writable-nested)
 [![codecov](https://codecov.io/gh/beda-software/drf-writable-nested/branch/master/graph/badge.svg)](https://codecov.io/gh/beda-software/drf-writable-nested)
 [![pypi](https://img.shields.io/pypi/v/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 [![pyversions](https://img.shields.io/pypi/pyversions/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
@@ -359,4 +358,4 @@ Similar approach will be also applicable for generic views for django rest frame
 
 Authors
 =======
-2014-2021, beda.software
+2014-2022, beda.software
