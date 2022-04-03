@@ -46,6 +46,10 @@ jobs:
           - python-version: "3.10"
             django: 4.0
 
+    env:
+      PYTHON: ${{ matrix.python-version }}
+      DJANGO: ${{ matrix.django }}
+
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
@@ -58,3 +62,13 @@ jobs:
         python -m pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        env_vars: PYTHON,DJANGO
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
