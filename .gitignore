@@ -14,6 +14,7 @@ MANIFEST
 coverage.*
 
 !.gitignore
+!.github
 !.travis.yml
 
 sample*
