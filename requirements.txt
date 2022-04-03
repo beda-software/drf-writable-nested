@@ -1,4 +1,5 @@
+
 # PyTest for running the tests.
-pytest==5.4.1
-pytest-django==4.0.0
-pytest-cov==2.8.1
+pytest==7.1.1
+pytest-django==4.5.2
+pytest-cov==3.0.0
