@@ -41,10 +41,10 @@ jobs:
           - python-version: 3.9
             django: 4.0
 
-          # - python-version: "3.10"
-          #   django: 3.2
-          # - python-version: "3.10"
-          #   django: 4.0
+          - python-version: "3.10"
+            django: 3.2
+          - python-version: "3.10"
+            django: 4.0
 
     steps:
     - uses: actions/checkout@v1
