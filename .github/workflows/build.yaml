@@ -9,8 +9,54 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        django: ['2.2', '3.0', '3.1', '3.2', '4.0']
-        python-version: ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10']
+        include:
+          - python-version: 3.5
+            django: 2.2
+
+          - python-version: 3.6
+            django: 2.2
+          - python-version: 3.6
+            django: 3.0
+          - python-version: 3.6
+            django: 3.1
+          - python-version: 3.6
+            django: 3.2
+
+          - python-version: 3.7
+            django: 2.2
+          - python-version: 3.7
+            django: 3.0
+          - python-version: 3.7
+            django: 3.1
+          - python-version: 3.7
+            django: 3.2
+
+          - python-version: 3.8
+            django: 2.2
+          - python-version: 3.8
+            django: 3.0
+          - python-version: 3.8
+            django: 3.1
+          - python-version: 3.8
+            django: 3.2
+          - python-version: 3.8
+            django: 4.0
+
+          - python-version: 3.9
+            django: 2.2
+          - python-version: 3.9
+            django: 3.0
+          - python-version: 3.9
+            django: 3.1
+          - python-version: 3.9
+            django: 3.2
+          - python-version: 3.9
+            django: 4.0
+
+          - python-version: 3.10
+            django: 3.2
+          - python-version: 3.10
+            django: 4.0
 
     steps:
     - uses: actions/checkout@v1
