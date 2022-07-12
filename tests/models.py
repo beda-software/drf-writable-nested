@@ -22,7 +22,7 @@ class AccessKey(models.Model):
 
 
 class Profile(models.Model):
-    sites = models.ManyToManyField(Site)
+    sites = models.ManyToManyField(Site, related_name="profiles")
     user = models.OneToOneField(
         User, on_delete=models.CASCADE)
     access_key = models.ForeignKey(
@@ -140,7 +140,7 @@ class ManyToManyParent(models.Model):
 class I86Name(models.Model):
     string = models.TextField()
     item = models.ForeignKey(
-        'I86Genre', on_delete=models.CASCADE, related_name='names', 
+        'I86Genre', on_delete=models.CASCADE, related_name='names',
         blank=True, null=True)
 
 

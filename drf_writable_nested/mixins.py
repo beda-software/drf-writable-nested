@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
+from django.db.models.fields.related import ManyToManyRel
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -75,7 +76,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             else:
                 raise
 
-        if isinstance(related_field, ForeignObjectRel):
+        if isinstance(related_field, ForeignObjectRel) and not isinstance(related_field, ManyToManyRel):
             return related_field.field, False
         return related_field, True
 
@@ -316,8 +317,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
 
             # M2M relation can be as direct or as reverse. For direct relation
             # we should use reverse relation name
-            if related_field.many_to_many and \
-                    not isinstance(related_field, ForeignObjectRel):
+            if related_field.many_to_many:
                 related_field_lookup = {
                     related_field.remote_field.name: instance,
                 }
