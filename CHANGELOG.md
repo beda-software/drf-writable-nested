@@ -1,3 +1,8 @@
+## 0.6.4
+* Support django 4.0 and python 3.10 #160 (@johnthagen)
+* Documentation update #148 (@xalien10)
+* Fix reverse m2m relation update #167 (@bierik)
+
 ## 0.6.3
 * Support django 3.2 and python 3.9 #142
 * Make nested object deletion extensible #143 (@kavdev)
