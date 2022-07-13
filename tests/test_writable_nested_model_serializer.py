@@ -53,6 +53,16 @@ class WritableNestedModelSerializerTest(TestCase):
             },
         }
 
+    def test_reverse_m2m_works(self):
+        user = models.User.objects.create(username='grawatte')
+        models.Profile.objects.create(pk=1, user=user)
+        site = models.Site.objects.create(url="http://example.org")
+        serializer = serializers.SiteSerializer(instance=site, data={'url': 'http://example.org', 'profiles': [{
+            'pk': 1
+        }]})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
     def test_create(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
         serializer.is_valid(raise_exception=True)

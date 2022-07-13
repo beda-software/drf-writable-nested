@@ -25,13 +25,19 @@ class MessageSerializer(serializers.ModelSerializer):
         model = models.Message
         fields = ('pk', 'message',)
 
+class InlineProfileSerializer(serializers.ModelSerializer):
 
-class SiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Profile
+        fields = ('pk',)
+
+class SiteSerializer(WritableNestedModelSerializer):
     url = serializers.CharField()
+    profiles = InlineProfileSerializer(many=True, required=False)
 
     class Meta:
         model = models.Site
-        fields = ('pk', 'url',)
+        fields = ('pk', 'url', 'profiles')
 
 
 class AccessKeySerializer(serializers.ModelSerializer):
