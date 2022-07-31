@@ -329,9 +329,9 @@ voucherrows[1].debit=1000.00
 voucherrows[1].credit=0.00
 voucherrows[1].description='Debited from Bank Account' 
 voucherrows[2].account=1130
-voucherrows[1].debit=0.00
-voucherrows[1].credit=1000.00
-voucherrows[1].description='Credited to Cash Account'
+voucherrows[2].debit=0.00
+voucherrows[2].credit=1000.00
+voucherrows[2].description='Credited to Cash Account'
 
 ```
 This is not supported at least for now. So, we can achieve the result in a different way.
