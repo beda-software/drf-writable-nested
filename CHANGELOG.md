@@ -1,3 +1,33 @@
+## 0.6.4
+* Support django 4.0 and python 3.10 #160 (@johnthagen)
+* Documentation update #148 (@xalien10)
+* Fix reverse m2m relation update #167 (@bierik)
+
+## 0.6.3
+* Support django 3.2 and python 3.9 #142
+* Make nested object deletion extensible #143 (@kavdev)
+* Support extended validator with message and other props for UniqueFieldsMixin (@starryrbs)
+
+## 0.6.2
+* Fix: Refresh from DB when updating nested object #122 (@pcarn)
+* Fix: UniqueFieldsMixin validation optional for partial update #117 (@robinchow)
+* Add Django 3.1 to CI tests (@johnthagen)
+
+## 0.6.1
+* Add support for Django 3.1 #115 (@LeeHanYeong)
+
+## 0.6.0
+* Drop end-of-life Django versions, add Django 2.2 and 3.0, and Python 3.8 (@johnthagen)
+
+## 0.5.4
+* Update UniqueFieldsMixin to support DRF 3.11 validator context API (@mands)
+
+## 0.5.3
+* Support custom resource_type_field_name for polymorphic serialize (@tsaipoan)
+
+## 0.5.2
+* Feature: Enable support for nested polymorphic relations #81 (@csdenboer)
+
 ## 0.5.1
 * Fix: Validate nested field before creating it even in partial update (@yuekui) 
 * Fix some potential issues  in the delete phase for reverse relations update

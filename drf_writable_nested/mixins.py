@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
+from typing import List, Tuple
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import (
-    ProtectedError, FieldDoesNotExist, SET_NULL, SET_DEFAULT
-)
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT
 from django.db.models.fields.related import ForeignObjectRel
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
+from django.db.models.fields.related import ManyToManyRel
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -75,7 +76,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             else:
                 raise
 
-        if isinstance(related_field, ForeignObjectRel):
+        if isinstance(related_field, ForeignObjectRel) and not isinstance(related_field, ManyToManyRel):
             return related_field.field, False
         return related_field, True
 
@@ -84,7 +85,17 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             'context': self.context,
             'partial': self.partial if kwargs.get('instance') else False,
         })
-        return field.__class__(**kwargs)
+
+        # if field is a polymorphic serializer
+        if hasattr(field, '_get_serializer_from_resource_type'):
+            # get 'real' serializer based on resource type
+            serializer = field._get_serializer_from_resource_type(
+                kwargs.get('data').get(field.resource_type_field_name)
+            )
+
+            return serializer.__class__(**kwargs)
+        else:
+            return field.__class__(**kwargs)
 
     def _get_generic_lookup(self, instance, related_field):
         return {
@@ -278,7 +289,16 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         )
         self.update_or_create_reverse_relations(instance, reverse_relations)
         self.delete_reverse_relations_if_need(instance, reverse_relations)
+        instance.refresh_from_db()
         return instance
+
+    def perform_nested_delete(self, pks_to_delete, model_class, instance, related_field, field_source):
+        if related_field.many_to_many:
+            # Remove relations from m2m table
+            m2m_manager = getattr(instance, field_source)
+            m2m_manager.remove(*pks_to_delete)
+        else:
+            model_class.objects.filter(pk__in=pks_to_delete).delete()
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority
@@ -297,8 +317,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
 
             # M2M relation can be as direct or as reverse. For direct relation
             # we should use reverse relation name
-            if related_field.many_to_many and \
-                    not isinstance(related_field, ForeignObjectRel):
+            if related_field.many_to_many:
                 related_field_lookup = {
                     related_field.remote_field.name: instance,
                 }
@@ -326,7 +345,6 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     m2m_manager = getattr(instance, field_source)
                     m2m_manager.remove(*pks_to_delete)
                 else:
-                    qs = model_class.objects.filter(pk__in=pks_to_delete)
                     on_delete = related_field.remote_field.on_delete
                     if on_delete in (SET_NULL, SET_DEFAULT):
                         # TODO: handle on_delete.SET() ?
@@ -334,9 +352,16 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                             default = related_field.get_default()
                         else:
                             default = None
+                        qs = model_class.objects.filter(pk__in=pks_to_delete)
                         qs.update(**{related_field.name: default})
                     else:
-                        qs.delete()
+                        self.perform_nested_delete(
+                            pks_to_delete,
+                            model_class,
+                            instance,
+                            related_field,
+                            field_source
+                        )
 
             except ProtectedError as e:
                 instances = e.args[1]
@@ -382,17 +407,19 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
     (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
     you should put `UniqueFieldsMixin` ahead.
     """
-    _unique_fields = []
+    _unique_fields = []  # type: List[Tuple[str,UniqueValidator]]
 
     def get_fields(self):
         self._unique_fields = []
 
         fields = super(UniqueFieldsMixin, self).get_fields()
         for field_name, field in fields.items():
-            is_unique = any([isinstance(validator, UniqueValidator)
-                             for validator in field.validators])
-            if is_unique:
-                self._unique_fields.append(field_name)
+            unique_validators = [validator
+                                 for validator in field.validators
+                                 if isinstance(validator, UniqueValidator)]
+            if unique_validators:
+                # 0 means only take the first one UniqueValidator
+                self._unique_fields.append((field_name, unique_validators[0]))
                 field.validators = [
                     validator for validator in field.validators
                     if not isinstance(validator, UniqueValidator)]
@@ -400,12 +427,18 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
         return fields
 
     def _validate_unique_fields(self, validated_data):
-        for field_name in self._unique_fields:
-            unique_validator = UniqueValidator(self.Meta.model.objects.all())
-            unique_validator.set_context(self.fields[field_name])
-
+        for unique_field in self._unique_fields:
+            field_name, unique_validator = unique_field
+            if self.partial and field_name not in validated_data:
+                continue
             try:
-                unique_validator(validated_data[field_name])
+                # `set_context` removed on DRF >= 3.11, pass in via __call__ instead
+                if hasattr(unique_validator, 'set_context'):
+                    unique_validator.set_context(self.fields[field_name])
+                    unique_validator(validated_data[field_name])
+                else:
+                    unique_validator(validated_data[field_name],
+                                     self.fields[field_name])
             except ValidationError as exc:
                 raise ValidationError({field_name: exc.detail})
 
