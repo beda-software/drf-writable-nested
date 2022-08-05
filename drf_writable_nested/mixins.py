@@ -292,13 +292,23 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         instance.refresh_from_db()
         return instance
 
-    def perform_nested_delete(self, pks_to_delete, model_class, instance, related_field, field_source):
+    def perform_nested_delete_or_update(self, pks_to_delete, model_class, instance, related_field, field_source):
         if related_field.many_to_many:
             # Remove relations from m2m table
             m2m_manager = getattr(instance, field_source)
             m2m_manager.remove(*pks_to_delete)
         else:
-            model_class.objects.filter(pk__in=pks_to_delete).delete()
+            qs = model_class.objects.filter(pk__in=pks_to_delete)
+            on_delete = related_field.remote_field.on_delete
+            if on_delete in (SET_NULL, SET_DEFAULT):
+                # TODO: handle on_delete.SET() ?
+                if on_delete == SET_DEFAULT:
+                    default = related_field.get_default()
+                else:
+                    default = None
+                qs.update(**{related_field.name: default})
+            else:
+                qs.delete()
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
         # Reverse `reverse_relations` for correct delete priority
@@ -339,29 +349,13 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                         pk__in=current_ids
                     ).values_list('pk', flat=True)
                 )
-
-                if related_field.many_to_many:
-                    # Remove relations from m2m table
-                    m2m_manager = getattr(instance, field_source)
-                    m2m_manager.remove(*pks_to_delete)
-                else:
-                    on_delete = related_field.remote_field.on_delete
-                    if on_delete in (SET_NULL, SET_DEFAULT):
-                        # TODO: handle on_delete.SET() ?
-                        if related_field.remote_field.on_delete == SET_DEFAULT:
-                            default = related_field.get_default()
-                        else:
-                            default = None
-                        qs = model_class.objects.filter(pk__in=pks_to_delete)
-                        qs.update(**{related_field.name: default})
-                    else:
-                        self.perform_nested_delete(
-                            pks_to_delete,
-                            model_class,
-                            instance,
-                            related_field,
-                            field_source
-                        )
+                self.perform_nested_delete_or_update(
+                    pks_to_delete,
+                    model_class,
+                    instance,
+                    related_field,
+                    field_source
+                )
 
             except ProtectedError as e:
                 instances = e.args[1]
