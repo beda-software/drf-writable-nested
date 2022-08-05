@@ -1,6 +1,6 @@
 # License
 
-Copyright (c) 2014-2017, beda.software
+Copyright (c) 2014-2020, beda.software
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -1,8 +1,11 @@
 import uuid
-from rest_framework.exceptions import ValidationError
 from django.test import TestCase
 from django.http.request import QueryDict
 from django.db import transaction
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APITestCase
 
 from .utils import get_sample_file
 
@@ -49,6 +52,16 @@ class WritableNestedModelSerializerTest(TestCase):
                 ]
             },
         }
+
+    def test_reverse_m2m_works(self):
+        user = models.User.objects.create(username='grawatte')
+        models.Profile.objects.create(pk=1, user=user)
+        site = models.Site.objects.create(url="http://example.org")
+        serializer = serializers.SiteSerializer(instance=site, data={'url': 'http://example.org', 'profiles': [{
+            'pk': 1
+        }]})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
     def test_create(self):
         serializer = serializers.UserSerializer(data=self.get_initial_data())
@@ -984,3 +997,79 @@ class WritableNestedModelSerializerTest(TestCase):
 
         self.assertTrue(models.Document.objects.filter(pk=doc.pk).exists())
         self.assertEqual(doc.page.title, 'some page')
+
+
+class WritableNestedModelSerializerIssuesTest(TestCase):
+    def test_issue_86(self):
+        serializer = serializers.I86GenreSerializer(data={
+            'names': [
+                {
+                    'string': 'Genre'
+                }
+            ]
+        })
+        self.assertTrue(serializer.is_valid())
+        instance = serializer.save()
+        
+        update_serializer = serializers.I86GenreSerializer(
+            instance=instance, 
+            data={
+                'id': instance.pk, 
+                'names': [
+                    {
+                        'id': instance.names.first().pk,
+                        'string': 'Genre changed'
+                    }
+                ]
+            }
+        )
+        self.assertTrue(update_serializer.is_valid())
+        update_serializer.save()
+        self.assertEqual(serializer.data['id'], update_serializer.data['id'])
+        self.assertEqual(
+            serializer.data['names'][0]['id'], 
+            update_serializer.data['names'][0]['id'])
+
+
+class WritableNestedModelSerializerAPITest(APITestCase):
+    def test_update_nested_included_in_response(self):
+        serializer = serializers.UserSerializer(
+            data=WritableNestedModelSerializerTest().get_initial_data()
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Check instances count
+        self.assertEqual(user.profile.avatars.count(), 2)
+
+        # Add an avatar
+        user_pk = user.pk
+        profile_pk = user.profile.pk
+        user_data = {
+            'pk': user_pk,
+            'username': 'new',
+            'profile': {
+                'pk': profile_pk,
+                'avatars': [
+                    {
+                        'pk': user.profile.avatars.earliest('pk').pk,
+                        'image': 'old-image-1.png',
+                    },
+                    {
+                        'image': 'new-image-1.png',
+                    },
+                    {
+                        'image': 'new-image-2.png',
+                    },
+                ],
+            },
+        }
+
+        update_serializer = serializers.UserSerializer(
+            data=user_data,
+            partial=True
+        )
+        update_serializer.is_valid(raise_exception=True)
+        user = update_serializer.save()
+        self.assertEqual(user.profile.avatars.count(), 3)
+

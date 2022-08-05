@@ -1,9 +1,14 @@
+from typing import Sequence
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from drf_writable_nested import (
-    WritableNestedModelSerializer, UniqueFieldsMixin)
+from rest_framework.validators import UniqueValidator
+
+from drf_writable_nested.serializers import WritableNestedModelSerializer
+from drf_writable_nested.mixins import UniqueFieldsMixin
 
 from . import models
+
+UNIQUE_ERROR_MESSAGE = 'The value is existed'
 
 
 class AvatarSerializer(serializers.ModelSerializer):
@@ -20,13 +25,19 @@ class MessageSerializer(serializers.ModelSerializer):
         model = models.Message
         fields = ('pk', 'message',)
 
+class InlineProfileSerializer(serializers.ModelSerializer):
 
-class SiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Profile
+        fields = ('pk',)
+
+class SiteSerializer(WritableNestedModelSerializer):
     url = serializers.CharField()
+    profiles = InlineProfileSerializer(many=True, required=False)
 
     class Meta:
         model = models.Site
-        fields = ('pk', 'url',)
+        fields = ('pk', 'url', 'profiles')
 
 
 class AccessKeySerializer(serializers.ModelSerializer):
@@ -61,7 +72,8 @@ class UserSerializer(WritableNestedModelSerializer):
 
     class Meta:
         model = models.User
-        fields = ('pk', 'profile', 'username', 'user_avatar')
+        # Explicit type so that mypy doesn't complain later about a longer Tuple
+        fields = ('pk', 'profile', 'username', 'user_avatar') # type: Sequence[str]
 
 
 class CustomSerializer(UserSerializer):
@@ -69,7 +81,7 @@ class CustomSerializer(UserSerializer):
     custom_field = serializers.CharField()
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + (
+        fields = tuple(UserSerializer.Meta.fields) + (
             'custom_field',
         )
 
@@ -187,8 +199,29 @@ class UFMChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
         fields = ('pk', 'field')
 
 
+class UFMChildSerializerForValidatorMessage(UniqueFieldsMixin,
+                                            serializers.ModelSerializer):
+    field = serializers.CharField(validators=[
+        UniqueValidator(queryset=models.UFMChild.objects.all(),
+                        message=UNIQUE_ERROR_MESSAGE
+                        )
+    ])
+
+    class Meta:
+        model = models.UFMChild
+        fields = ('pk', 'field')
+
+
 class UFMParentSerializer(WritableNestedModelSerializer):
     child = UFMChildSerializer()
+
+    class Meta:
+        model = models.UFMParent
+        fields = ('pk', 'child')
+
+
+class UFMParentSerializerForValidatorMessage(WritableNestedModelSerializer):
+    child = UFMChildSerializerForValidatorMessage()
 
     class Meta:
         model = models.UFMParent
@@ -327,3 +360,17 @@ class UserSetDefaultForeignKeySerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.User
         fields = ('pk', 'username', 'set_default_foreignkeys')
+
+
+class I86GenreNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.I86Name
+        fields = ('id', 'string',)
+
+
+class I86GenreSerializer(WritableNestedModelSerializer):
+    names = I86GenreNameSerializer(many=True)
+
+    class Meta:
+        model = models.I86Genre
+        fields = ('id', 'names',)
