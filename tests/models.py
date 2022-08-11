@@ -29,6 +29,27 @@ class Profile(models.Model):
         AccessKey, on_delete=models.CASCADE, null=True)
 
 
+class SetNullForeignKey(models.Model):
+    name = models.CharField(max_length=100, primary_key=True, unique=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="set_null_foreignkeys",
+        blank=True,
+        null=True
+    )
+
+
+class SetDefaultForeignKey(models.Model):
+    name = models.CharField(max_length=100, primary_key=True, unique=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_DEFAULT,
+        related_name="set_default_foreignkeys",
+        default=666  # Default user in our test case
+    )
+
+
 class Avatar(models.Model):
     image = models.CharField(max_length=100)
     profile = models.ForeignKey(

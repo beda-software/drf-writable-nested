@@ -9,6 +9,7 @@ DATABASES = {
         'NAME': ':memory:'
     }
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1
 SECRET_KEY = 'not very secret in tests'
 USE_I18N = True

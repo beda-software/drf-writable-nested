@@ -332,6 +332,36 @@ class ReverseManyToManyChildSerializer(WritableNestedModelSerializer):
         fields = ('id', 'parents',)
 
 
+class SetNullForeignKeySerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+
+    class Meta:
+        model = models.SetNullForeignKey
+        fields = ('name',)
+
+
+class UserSetNullForeignKeySerializer(WritableNestedModelSerializer):
+    set_null_foreignkeys = SetNullForeignKeySerializer(many=True, required=False)
+
+    class Meta:
+        model = models.User
+        fields = ('pk', 'username', 'set_null_foreignkeys')
+
+
+class SetDefaultForeignKeySerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+
+    class Meta:
+        model = models.SetDefaultForeignKey
+        fields = ('name',)
+
+
+class UserSetDefaultForeignKeySerializer(WritableNestedModelSerializer):
+    set_default_foreignkeys = SetDefaultForeignKeySerializer(many=True, required=False)
+
+    class Meta:
+        model = models.User
+        fields = ('pk', 'username', 'set_default_foreignkeys')
+
+
 class I86GenreNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.I86Name
