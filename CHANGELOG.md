@@ -1,3 +1,6 @@
+## 0.7.0
+* Related objects are not deleted if they have relation with on_delete=SET_NULL/SET_DEFAULT #72 (@izimobil)
+
 ## 0.6.4
 * Support django 4.0 and python 3.10 #160 (@johnthagen)
 * Documentation update #148 (@xalien10)
