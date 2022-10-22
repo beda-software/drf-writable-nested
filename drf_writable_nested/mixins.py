@@ -209,10 +209,13 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             data = self.get_initial()[field_name]
             model_class = field.Meta.model
             pk = self._get_related_pk(data, model_class)
+            # pk needs to be specified if it's not one to one or creation of new object is not intended
             if pk:
                 obj = model_class.objects.filter(
                     pk=pk,
                 ).first()
+            elif hasattr(self.instance, field_source):
+                obj = getattr(self.instance, field_source)
             serializer = self._get_serializer_for_field(
                 field,
                 instance=obj,
