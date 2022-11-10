@@ -1,17 +1,29 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
+from collections.abc import Mapping
 from typing import List, Tuple
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT
-from django.db.models.fields.related import ForeignObjectRel
+from django.db.models import SET_DEFAULT, SET_NULL, ProtectedError
+from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty, set_value
+from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueValidator
-from django.db.models.fields.related import ManyToManyRel
+
+
+class NestedOnlySerializerMixin(serializers.ModelSerializer):
+    """
+    Required for all serializers that are nested under BaseNestedModelSerializer.
+    """
+
+    def save(self, **kwargs):
+        self._validated_data = self.to_internal_value(self.initial_data)
+        return super().save(**kwargs)
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -135,6 +147,31 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         return instances
 
+    def fast_to_internal_value(self, data):
+        """
+        Dict of native values <- Dict of primitive datatypes.
+        Skips validation.
+        """
+        if not isinstance(data, Mapping):
+            message = self.error_messages['invalid'].format(
+                datatype=type(data).__name__
+            )
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: [message]
+            }, code='invalid')
+
+        ret = OrderedDict()
+        fields = self._writable_fields
+
+        for field in fields:
+            primitive_value = field.get_value(data)
+            if primitive_value is empty:
+                continue
+
+            set_value(ret, field.source_attrs, primitive_value)
+
+        return ret
+
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
         # many-to-one, many-to-many, reversed one-to-one
@@ -184,7 +221,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     data=data,
                 )
                 try:
-                    serializer.is_valid(raise_exception=True)
+                    serializer._errors = {}
+                    serializer._validated_data = self.fast_to_internal_value(self.initial_data)
                     related_instance = serializer.save(**save_kwargs)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
@@ -223,7 +261,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             )
 
             try:
-                serializer.is_valid(raise_exception=True)
+
+                serializer._errors = {}
+                serializer._validated_data = self.fast_to_internal_value(self.initial_data)
                 attrs[field_source] = serializer.save(
                     **self._get_save_kwargs(field_name)
                 )
