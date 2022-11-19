@@ -16,17 +16,58 @@ from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueValidator
 
 
-class NestedOnlySerializerMixin(serializers.ModelSerializer):
+class FastToInternalValueMixin:
+    def fast_to_internal_value(self, data):
+        """
+        Dict of native values <- Dict of primitive datatypes.
+        Skips validation.
+        """
+        if not isinstance(data, Mapping):
+            message = self.error_messages['invalid'].format(
+                datatype=type(data).__name__
+            )
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: [message]
+            }, code='invalid')
+
+        ret = OrderedDict()
+        fields = self._writable_fields
+
+        for field in fields:
+            primitive_value = field.get_value(data)
+            if primitive_value is empty:
+                continue
+
+            set_value(ret, field.source_attrs, primitive_value)
+
+        return ret
+
+
+class NestedOnlySerializerMixin(FastToInternalValueMixin, serializers.ModelSerializer):
     """
     Required for all serializers that are nested under BaseNestedModelSerializer.
     """
 
     def save(self, **kwargs):
-        self._validated_data = self.to_internal_value(self.initial_data)
-        return super().save(**kwargs)
+        self._validated_data = self.fast_to_internal_value(self.initial_data)
+        self._save_kwargs = defaultdict(dict, kwargs)
+        validated_data = {**self.validated_data, **kwargs}
+
+        if self.instance is not None:
+            self.instance = self.update(self.instance, validated_data)
+            assert self.instance is not None, (
+                '`update()` did not return an object instance.'
+            )
+        else:
+            self.instance = self.create(validated_data)
+            assert self.instance is not None, (
+                '`create()` did not return an object instance.'
+            )
+
+        return self.instance
 
 
-class BaseNestedModelSerializer(serializers.ModelSerializer):
+class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSerializer):
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
@@ -147,30 +188,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         return instances
 
-    def fast_to_internal_value(self, data):
-        """
-        Dict of native values <- Dict of primitive datatypes.
-        Skips validation.
-        """
-        if not isinstance(data, Mapping):
-            message = self.error_messages['invalid'].format(
-                datatype=type(data).__name__
-            )
-            raise ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: [message]
-            }, code='invalid')
-
-        ret = OrderedDict()
-        fields = self._writable_fields
-
-        for field in fields:
-            primitive_value = field.get_value(data)
-            if primitive_value is empty:
-                continue
-
-            set_value(ret, field.source_attrs, primitive_value)
-
-        return ret
 
     def update_or_create_reverse_relations(self, instance, reverse_relations):
         # Update or create reverse relations:
