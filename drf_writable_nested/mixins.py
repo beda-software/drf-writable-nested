@@ -6,7 +6,7 @@ from typing import List, Tuple
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import SET_DEFAULT, SET_NULL, ProtectedError
+from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
