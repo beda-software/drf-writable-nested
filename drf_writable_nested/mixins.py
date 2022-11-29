@@ -239,7 +239,7 @@ class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSeria
                 )
                 try:
                     serializer._errors = {}
-                    serializer._validated_data = self.fast_to_internal_value(self.initial_data)
+                    serializer._validated_data = serializer.fast_to_internal_value(serializer.initial_data)
                     related_instance = serializer.save(**save_kwargs)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
@@ -280,7 +280,7 @@ class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSeria
             try:
 
                 serializer._errors = {}
-                serializer._validated_data = self.fast_to_internal_value(self.initial_data)
+                serializer._validated_data = serializer.fast_to_internal_value(serializer.initial_data)
                 attrs[field_source] = serializer.save(
                     **self._get_save_kwargs(field_name)
                 )
