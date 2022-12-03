@@ -16,40 +16,12 @@ from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueValidator
 
 
-class FastToInternalValueMixin:
-    def fast_to_internal_value(self, data):
-        """
-        Dict of native values <- Dict of primitive datatypes.
-        Skips validation.
-        """
-        if not isinstance(data, Mapping):
-            message = self.error_messages['invalid'].format(
-                datatype=type(data).__name__
-            )
-            raise ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: [message]
-            }, code='invalid')
-
-        ret = OrderedDict()
-        fields = self._writable_fields
-
-        for field in fields:
-            primitive_value = field.get_value(data)
-            if primitive_value is empty:
-                continue
-
-            set_value(ret, field.source_attrs, primitive_value)
-
-        return ret
-
-
-class NestedOnlySerializerMixin(FastToInternalValueMixin, serializers.ModelSerializer):
+class NestedOnlySerializerMixin(serializers.ModelSerializer):
     """
     Required for all serializers that are nested under BaseNestedModelSerializer.
     """
 
     def save(self, **kwargs):
-        self._validated_data = self.fast_to_internal_value(self.initial_data)
         self._save_kwargs = defaultdict(dict, kwargs)
         validated_data = {**self.validated_data, **kwargs}
 
@@ -67,7 +39,7 @@ class NestedOnlySerializerMixin(FastToInternalValueMixin, serializers.ModelSeria
         return self.instance
 
 
-class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSerializer):
+class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
@@ -228,7 +200,7 @@ class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSeria
 
             new_related_instances = []
             errors = []
-            for data in related_data:
+            for index, data in enumerate(related_data):
                 obj = instances.get(
                     self._get_related_pk(data, field.Meta.model)
                 )
@@ -239,7 +211,7 @@ class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSeria
                 )
                 try:
                     serializer._errors = {}
-                    serializer._validated_data = serializer.fast_to_internal_value(serializer.initial_data)
+                    serializer._validated_data = self._validated_data[field_name][index]
                     related_instance = serializer.save(**save_kwargs)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
@@ -280,7 +252,7 @@ class BaseNestedModelSerializer(FastToInternalValueMixin, serializers.ModelSeria
             try:
 
                 serializer._errors = {}
-                serializer._validated_data = serializer.fast_to_internal_value(serializer.initial_data)
+                serializer._validated_data = self._validated_data[field_name]
                 attrs[field_source] = serializer.save(
                     **self._get_save_kwargs(field_name)
                 )
