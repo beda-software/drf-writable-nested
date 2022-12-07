@@ -174,6 +174,8 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             if related_data is None:
                 continue
 
+            related_validated_data = self._validated_data[field_name]
+
             if related_field.one_to_one:
                 # If an object already exists, fill in the pk so
                 # we don't try to duplicate it
@@ -187,6 +189,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
                 # Expand to array of one item for one-to-one for uniformity
                 related_data = [related_data]
+                related_validated_data = [related_validated_data]
 
             instances = self._prefetch_related_instances(field, related_data)
 
@@ -211,7 +214,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 )
                 try:
                     serializer._errors = {}
-                    serializer._validated_data = self._validated_data[field_name][index]
+                    serializer._validated_data = related_validated_data[index]
                     related_instance = serializer.save(**save_kwargs)
                     data['pk'] = related_instance.pk
                     new_related_instances.append(related_instance)
