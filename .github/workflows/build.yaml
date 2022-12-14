@@ -1,4 +1,4 @@
-.github/workflows/build.yamlname: DRF Writable Nested
+name: DRF Writable Nested
 
 on:
   - push
