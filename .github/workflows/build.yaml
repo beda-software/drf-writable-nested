@@ -18,7 +18,6 @@ jobs:
 
     env:
       PYTHON: ${{ matrix.python-version }}
-      DJANGO: ${{ matrix.django }}
 
     steps:
     - uses: actions/checkout@v1
@@ -36,7 +35,7 @@ jobs:
       uses: codecov/codecov-action@v2
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        env_vars: PYTHON,DJANGO
+        env_vars: PYTHON
         fail_ci_if_error: true
         files: ./coverage.xml
         flags: unittests
