@@ -46,6 +46,11 @@ jobs:
           - python-version: "3.10"
             django: 4.0
 
+          - python-version: "3.11"
+            django: 4.0
+          - python-version: "3.11"
+            django: 4.1
+
     env:
       PYTHON: ${{ matrix.python-version }}
       DJANGO: ${{ matrix.django }}
