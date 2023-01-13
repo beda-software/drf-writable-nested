@@ -174,7 +174,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             if related_data is None:
                 continue
 
-            related_validated_data = self._validated_data[field_name]
+            related_validated_data = self._validated_data[field_source]
 
             if related_field.one_to_one:
                 # If an object already exists, fill in the pk so
@@ -255,7 +255,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             try:
 
                 serializer._errors = {}
-                serializer._validated_data = self._validated_data[field_name]
+                serializer._validated_data = self._validated_data[field_source]
                 attrs[field_source] = serializer.save(
                     **self._get_save_kwargs(field_name)
                 )
