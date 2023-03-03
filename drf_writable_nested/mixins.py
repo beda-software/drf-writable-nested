@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
-from collections.abc import Mapping
 from typing import List, Tuple
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT
+from django.db.models import (SET_DEFAULT, SET_NULL, OneToOneField,
+                              ProtectedError)
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import empty, set_value
-from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueValidator
 
 
@@ -240,6 +238,20 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             model_class = field.Meta.model
             pk = self._get_related_pk(data, model_class)
             # pk needs to be specified if it's not one to one or creation of new object is not intended
+
+            is_one_to_one = isinstance(self.instance._meta.get_field(field_name), OneToOneField)
+
+            if pk and not is_one_to_one:
+                # for direct ForeignKey
+                # potential filtering should be done in the child serializer
+                # as it is too project-specific
+                obj = model_class.objects.filter(
+                    pk=pk,
+                ).first()
+            else:
+                # for direct OneToOne or current ForeignKey
+                obj = getattr(self.instance, field_source)
+
             if pk:
                 obj = model_class.objects.filter(
                     pk=pk,
@@ -346,6 +358,10 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 qs.delete()
 
     def delete_reverse_relations_if_need(self, instance, reverse_relations):
+        if self.partial:
+            # bypass deletion if set to partial update
+            return
+
         # Reverse `reverse_relations` for correct delete priority
         reverse_relations = OrderedDict(
             reversed(list(reverse_relations.items())))
