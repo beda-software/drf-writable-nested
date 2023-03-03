@@ -145,15 +145,14 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
         return pk_list
 
-    def _prefetch_related_instances(self, field, related_data):
-        model_class = field.Meta.model
+    def _prefetch_related_instances(self, field, related_data, field_name, instance):
         pk_list = self._extract_related_pks(field, related_data)
+
+        related_manager = getattr(instance, field_name)
 
         instances = {
             str(related_instance.pk): related_instance
-            for related_instance in model_class.objects.filter(
-                pk__in=pk_list
-            )
+            for related_instance in related_manager.filter(pk__in=pk_list)
         }
 
         return instances
@@ -189,7 +188,12 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 related_data = [related_data]
                 related_validated_data = [related_validated_data]
 
-            instances = self._prefetch_related_instances(field, related_data)
+            instances = self._prefetch_related_instances(
+                field,
+                related_data,
+                field_name,
+                instance
+            )
 
             save_kwargs = self._get_save_kwargs(field_name)
             if isinstance(related_field, GenericRelation):
@@ -252,12 +256,6 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 # for direct OneToOne or current ForeignKey
                 obj = getattr(self.instance, field_source)
 
-            if pk:
-                obj = model_class.objects.filter(
-                    pk=pk,
-                ).first()
-            elif hasattr(self.instance, field_source):
-                obj = getattr(self.instance, field_source)
             serializer = self._get_serializer_for_field(
                 field,
                 instance=obj,
