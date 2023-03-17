@@ -254,7 +254,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 ).first()
             else:
                 # for direct OneToOne or current ForeignKey
-                obj = getattr(self.instance, field_source)
+                obj = getattr(self.instance, field_source, None)
 
             serializer = self._get_serializer_for_field(
                 field,
