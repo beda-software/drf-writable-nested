@@ -243,7 +243,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
             pk = self._get_related_pk(data, model_class)
             # pk needs to be specified if it's not one to one or creation of new object is not intended
 
-            is_one_to_one = isinstance(self.instance._meta.get_field(field_name), OneToOneField)
+            is_one_to_one = isinstance(self.Meta.model._meta.get_field(field_name), OneToOneField)
 
             if pk and not is_one_to_one:
                 # for direct ForeignKey
