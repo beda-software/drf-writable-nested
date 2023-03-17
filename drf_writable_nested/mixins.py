@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.db.models import (SET_DEFAULT, SET_NULL, OneToOneField,
                               ProtectedError)
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
@@ -148,7 +148,10 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def _prefetch_related_instances(self, field, related_data, field_name, instance):
         pk_list = self._extract_related_pks(field, related_data)
 
-        related_manager = getattr(instance, field_name)
+        try:
+            related_manager = getattr(instance, field_name)
+        except ObjectDoesNotExist:
+            return {}
 
         instances = {
             str(related_instance.pk): related_instance
