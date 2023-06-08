@@ -177,6 +177,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 obj = instances.get(
                     self._get_related_pk(data, field.Meta.model)
                 )
+                if not obj and (getattr(field, 'only_assignation_allowed', False) or
+                                getattr(field.parent, 'only_assignation_allowed', False)):
+                    continue
                 serializer = self._get_serializer_for_field(
                     field,
                     instance=obj,
@@ -212,6 +215,9 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                 obj = model_class.objects.filter(
                     pk=pk,
                 ).first()
+            else:
+                if field.only_assignation_allowed:
+                    return
             serializer = self._get_serializer_for_field(
                 field,
                 instance=obj,
