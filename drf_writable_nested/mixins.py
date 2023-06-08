@@ -216,7 +216,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
                     pk=pk,
                 ).first()
             else:
-                if field.only_assignation_allowed:
+                if getattr(field, 'only_assignation_allowed', False):
                     return
             serializer = self._get_serializer_for_field(
                 field,
