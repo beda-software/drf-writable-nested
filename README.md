@@ -18,7 +18,7 @@ Requirements
 ============
 
 - Python (3.7, 3.8, 3.9, 3.10, 3.11)
-- Django (2.2, 3.0, 3.1, 3.2, 4.0, 4.1)
+- Django (2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2)
 - djangorestframework (3.8+)
 
 Installation
