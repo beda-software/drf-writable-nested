@@ -13,7 +13,36 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
 
+class BaseNestedListSerializer(serializers.ListSerializer):
+    def create(self, validated_data):
+        instances = []
+        for attrs in self.get_initial():
+            self.child.initial_data = attrs
+            instances.append(
+                self.child.create(
+                    validated_data=self.child.to_internal_value(attrs)
+                )
+            )
+        return instances
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError(
+            "Update not supported with many=True, only create."
+        )
+
+    def save(self, **kwargs):
+        self.child._save_kwargs = defaultdict(dict, kwargs)
+
+        super(BaseNestedListSerializer, self).save(**kwargs)
+
 class BaseNestedModelSerializer(serializers.ModelSerializer):
+    @classmethod
+    def many_init(cls, *args, **kwargs):
+        # Allow overriding of list_serializer_class, default to BaseNestedListSerializer
+        if not getattr(cls.Meta, 'list_serializer_class', None):
+            cls.Meta.list_serializer_class = BaseNestedListSerializer
+        return super(BaseNestedModelSerializer, cls).many_init(*args, **kwargs)
+
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
