@@ -29,27 +29,27 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
 
             if isinstance(field, serializers.ListSerializer) and \
                     isinstance(field.child, serializers.ModelSerializer):
-                if field.source not in validated_data:
+                if field_name not in validated_data:
                     # Skip field if field is not required
                     continue
 
-                validated_data.pop(field.source)
+                validated_data.pop(field_name)
 
                 reverse_relations[field_name] = (
-                    related_field, field.child, field.source)
+                    related_field, field.child, field_name)
 
             if isinstance(field, serializers.ModelSerializer):
-                if field.source not in validated_data:
+                if field_name not in validated_data:
                     # Skip field if field is not required
                     continue
 
-                if validated_data.get(field.source) is None:
+                if validated_data.get(field_name) is None:
                     if direct:
                         # Don't process null value for direct relations
                         # Native create/update processes these values
                         continue
 
-                validated_data.pop(field.source)
+                validated_data.pop(field_name)
                 # Reversed one-to-one looks like direct foreign keys but they
                 # are reverse relations
                 if direct:
