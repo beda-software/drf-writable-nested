@@ -205,7 +205,10 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
     def update_or_create_direct_relations(self, attrs, relations):
         for field_name, (field, field_source) in relations.items():
             obj = None
-            data = self.get_initial()[field_name]
+            data = self.get_initial().get(field_name, None)
+            if data is None:
+                continue
+
             model_class = field.Meta.model
             pk = self._get_related_pk(data, model_class)
             if pk:
@@ -319,7 +322,10 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                 reverse_relations.items():
             model_class = field.Meta.model
 
-            related_data = self.get_initial()[field_name]
+            related_data = self.get_initial().get(field_name, None)
+            if related_data is None:
+                continue
+
             # Expand to array of one item for one-to-one for uniformity
             if related_field.one_to_one:
                 related_data = [related_data]
