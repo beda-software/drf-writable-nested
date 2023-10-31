@@ -168,3 +168,20 @@ class I86Name(models.Model):
 class I86Genre(models.Model):
     pass
 
+
+class I49Veterinary(models.Model):
+    name = models.CharField(max_length=50)
+
+class I49Product(models.Model):
+    number = models.CharField(max_length=50)
+    cost = models.FloatField()
+
+
+class I49ProductDetail(models.Model):
+    product = models.ForeignKey("I49Product", on_delete=models.CASCADE, related_name='product_details')
+    veterinary = models.ForeignKey("I49Veterinary", on_delete=models.PROTECT)
+    cost = models.FloatField()
+
+    class Meta:
+        unique_together = ('product', 'veterinary')
+ 

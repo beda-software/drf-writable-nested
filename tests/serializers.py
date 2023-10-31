@@ -2,6 +2,7 @@ from typing import Sequence
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
+from rest_framework.relations import PrimaryKeyRelatedField
 
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_writable_nested.mixins import UniqueFieldsMixin
@@ -374,3 +375,21 @@ class I86GenreSerializer(WritableNestedModelSerializer):
     class Meta:
         model = models.I86Genre
         fields = ('id', 'names',)
+
+
+
+class I49ProductDetailSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    veterinary = PrimaryKeyRelatedField(queryset=models.I49Veterinary.objects)
+
+    class Meta:
+        model = models.I49ProductDetail
+        fields = ('id', 'veterinary', 'cost')
+
+
+class I49ProductSerializerWithPK(WritableNestedModelSerializer):
+    product_details = I49ProductDetailSerializer(many=True)
+
+    class Meta:
+        model = models.I49Product
+        fields = ('id', 'number', 'cost', 'product_details')

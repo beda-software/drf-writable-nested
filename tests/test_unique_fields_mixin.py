@@ -88,16 +88,46 @@ class UniqueFieldsMixinTestCase(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             serializer.save()
         self.assertEqual(
-            ctx.exception.detail,
-            {'child': {'field': [unique_message_error_detail]}}
+            ctx.exception.detail, {"child": {"field": [unique_message_error_detail]}}
         )
 
     def test_unique_field_not_required_for_partial_updates(self):
-        child = models.UFMChild.objects.create(field='value')
+        child = models.UFMChild.objects.create(field="value")
         serializer = serializers.UFMChildSerializer(
-            instance=child,
-            data={},
-            partial=True
+            instance=child, data={}, partial=True
         )
         self.assertTrue(serializer.is_valid())
         serializer.save()
+
+
+class I49Test(TestCase):
+    def test_issue_49(self):
+        veterinary = models.I49Veterinary.objects.create(name="Veterinary 1")
+        serializer = serializers.I49ProductSerializerWithPK(
+            data={
+                "number": "Product XX",
+                "cost": 20000,
+                "product_details": [{"veterinary": veterinary.id, "cost": 10000}],
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        instance = serializer.save()
+
+        assert len(models.I49Product.objects.all()) == 1
+        assert len(models.I49ProductDetail.objects.all()) == 1
+
+        serializer = serializers.I49ProductSerializerWithPK(
+            instance=instance,
+            data={
+                "number": "Product XX",
+                "cost": 20000,
+                "product_details": [{"veterinary": veterinary.id, "cost": 10000}],
+            },
+        )
+
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        assert len(models.I49Product.objects.all()) == 1
+        assert len(models.I49ProductDetail.objects.all()) == 1
