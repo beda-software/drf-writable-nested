@@ -202,9 +202,10 @@ class UFMChildSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
 class UFMChildSerializerForValidatorMessage(UniqueFieldsMixin,
                                             serializers.ModelSerializer):
     field = serializers.CharField(validators=[
-        UniqueValidator(queryset=models.UFMChild.objects.all(),
-                        message=UNIQUE_ERROR_MESSAGE
-                        )
+        UniqueValidator(
+            queryset=models.UFMChild.objects.all(),  # type: ignore[attr-defined]
+            message=UNIQUE_ERROR_MESSAGE,
+        )
     ])
 
     class Meta:
