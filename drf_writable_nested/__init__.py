@@ -1,8 +1,8 @@
 __title__ = 'DRF writable nested'
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __author__ = 'beda.software'
 __license__ = 'BSD 2-Clause'
-__copyright__ = 'Copyright 2014-2022 beda.software'
+__copyright__ = 'Copyright 2014-2024 beda.software'
 
 # Version synonym
 VERSION = __version__
