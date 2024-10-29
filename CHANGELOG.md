@@ -1,3 +1,6 @@
+## Unreleased
+* Drop support for end-of-life Python 3.8 (@browniebroke)
+
 ## 0.7.1
 * Add support for Python 3.12, Django 5.0, DRF 3.15 (@browniebroke)
 * Drop support for Python <3.7, Django <4.2, DRF <3.14 (@browniebroke) 
