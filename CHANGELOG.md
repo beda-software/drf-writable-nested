@@ -1,4 +1,5 @@
 ## Unreleased
+* Add support for Django 5.1, 5.2 and Python 3.13 (@browniebroke)
 * Drop support for end-of-life Python 3.8 (@browniebroke)
 
 ## 0.7.1
