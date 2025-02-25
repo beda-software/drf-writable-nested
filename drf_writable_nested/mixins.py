@@ -288,7 +288,6 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
         )
         self.update_or_create_reverse_relations(instance, reverse_relations)
         self.delete_reverse_relations_if_need(instance, reverse_relations)
-        instance.refresh_from_db()
         return instance
 
     def perform_nested_delete_or_update(self, pks_to_delete, model_class, instance, related_field, field_source):
