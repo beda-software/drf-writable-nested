@@ -10,7 +10,7 @@ from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.validators import UniqueValidator
+from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 
 class BaseNestedModelSerializer(serializers.ModelSerializer):
@@ -400,12 +400,14 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
     (`UniqueFieldsMixin` and `NestedCreateMixin` or `NestedUpdateMixin`)
     you should put `UniqueFieldsMixin` ahead.
     """
-    _unique_fields = []  # type: List[Tuple[str,UniqueValidator]]
+    _unique_fields = []  # type: List[Tuple[str, UniqueValidator]]
+    _unique_together_validators = []  # type: List[UniqueTogetherValidator]
 
     def get_fields(self):
         self._unique_fields = []
 
         fields = super(UniqueFieldsMixin, self).get_fields()
+
         for field_name, field in fields.items():
             unique_validators = [validator
                                  for validator in field.validators
@@ -418,6 +420,10 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
                     if not isinstance(validator, UniqueValidator)]
 
         return fields
+
+    def get_unique_together_validators(self):
+        self._unique_together_validators = super().get_unique_together_validators()
+        return []
 
     def _validate_unique_fields(self, validated_data):
         for unique_field in self._unique_fields:
@@ -434,6 +440,8 @@ class UniqueFieldsMixin(serializers.ModelSerializer):
                                      self.fields[field_name])
             except ValidationError as exc:
                 raise ValidationError({field_name: exc.detail})
+        for validator in self._unique_together_validators:
+            validator(validated_data, self)
 
     def create(self, validated_data):
         self._validate_unique_fields(validated_data)
