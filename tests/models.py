@@ -128,6 +128,20 @@ class UFMParent(models.Model):
     child = models.ForeignKey(UFMChild, on_delete=models.CASCADE)
 
 
+class ItemCategory(models.Model):
+    name = models.CharField(max_length=50)
+    company = models.CharField(max_length=50)
+
+    class Meta:
+        unique_together = (
+            ("name", "company"),
+        )
+
+
+class ItemParent(models.Model):
+    child = models.ForeignKey(ItemCategory, on_delete=models.CASCADE)
+
+
 # Models for different relations
 
 class ForeignKeyChild(models.Model):
