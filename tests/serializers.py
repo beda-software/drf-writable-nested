@@ -393,7 +393,7 @@ class I86GenreSerializer(WritableNestedModelSerializer):
 
 
 
-class I49ProductDetailSerializer(serializers.ModelSerializer):
+class I49ProductDetailSerializer(UniqueFieldsMixin, serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     veterinary = PrimaryKeyRelatedField(queryset=models.I49Veterinary.objects)
 
