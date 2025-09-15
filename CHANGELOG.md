@@ -1,3 +1,11 @@
+## 0.7.2
+* Add support for Django 5.1, 5.2 and Python 3.13 (@browniebroke)
+* Drop support for end-of-life Python 3.8 (@browniebroke)
+
+## 0.7.1
+* Add support for Python 3.12, Django 5.0, DRF 3.15 (@browniebroke)
+* Drop support for Python <3.7, Django <4.2, DRF <3.14 (@browniebroke) 
+
 ## 0.7.0
 * Related objects are not deleted if they have relation with on_delete=SET_NULL/SET_DEFAULT #72 (@izimobil)
 
