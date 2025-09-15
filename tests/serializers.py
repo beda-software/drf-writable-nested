@@ -229,6 +229,20 @@ class UFMParentSerializerForValidatorMessage(WritableNestedModelSerializer):
         model = models.UFMParent
         fields = ('pk', 'child')
 
+# UniqueFieldsMixin, unique_together validation serializers
+
+class ItemCategorySerializer(UniqueFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = models.ItemCategory
+        fields = "__all__"
+
+
+class ItemParentSerializer(WritableNestedModelSerializer):
+    child = ItemCategorySerializer()
+
+    class Meta:
+        model = models.ItemParent
+        fields = "__all__"
 
 # Different relations
 
