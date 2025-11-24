@@ -1,3 +1,6 @@
+## Unreleased
+* Make serializer classes generic (@noamkush)
+
 ## 0.7.2
 * Add support for Django 5.1, 5.2 and Python 3.13 (@browniebroke)
 * Drop support for end-of-life Python 3.8 (@browniebroke)

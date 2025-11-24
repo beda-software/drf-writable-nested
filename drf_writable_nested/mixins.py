@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
-from typing import List, Tuple
+from typing import List, Tuple, TypeVar
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT
+from django.db.models import ProtectedError, SET_NULL, SET_DEFAULT, Model
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyRel
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
+_MT = TypeVar("_MT", bound=Model)
 
-class BaseNestedModelSerializer(serializers.ModelSerializer):
+
+class BaseNestedModelSerializer(serializers.ModelSerializer[_MT]):
     def _extract_relations(self, validated_data):
         reverse_relations = OrderedDict()
         relations = OrderedDict()
@@ -241,7 +243,7 @@ class BaseNestedModelSerializer(serializers.ModelSerializer):
         return save_kwargs
 
 
-class NestedCreateMixin(BaseNestedModelSerializer):
+class NestedCreateMixin(BaseNestedModelSerializer[_MT]):
     """
     Adds nested create feature
     """
@@ -262,7 +264,7 @@ class NestedCreateMixin(BaseNestedModelSerializer):
         return instance
 
 
-class NestedUpdateMixin(BaseNestedModelSerializer):
+class NestedUpdateMixin(BaseNestedModelSerializer[_MT]):
     """
     Adds update nested feature
     """
@@ -362,7 +364,7 @@ class NestedUpdateMixin(BaseNestedModelSerializer):
                     str(instance) for instance in instances]))
 
 
-class UniqueFieldsMixin(serializers.ModelSerializer):
+class UniqueFieldsMixin(serializers.ModelSerializer[_MT]):
     """
     Moves `UniqueValidator`'s from the validation stage to the save stage.
     It solves the problem with nested validation for unique fields on update.
