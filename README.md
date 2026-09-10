@@ -1,7 +1,7 @@
 DRF Writable Nested
 ====================
 ![build](https://github.com/beda-software/drf-writable-nested/actions/workflows/build.yaml/badge.svg)
-[![codecov](https://codecov.io/gh/beda-software/drf-writable-nested/branch/master/graph/badge.svg)](https://codecov.io/gh/beda-software/drf-writable-nested)
+[![codecov](https://codecov.io/gh/beda-software/drf-writable-nested/branch/master/badge.svg?token=W0po6jnd66)](https://codecov.io/gh/beda-software/drf-writable-nested)
 [![pypi](https://img.shields.io/pypi/v/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 [![pyversions](https://img.shields.io/pypi/pyversions/drf-writable-nested.svg)](https://pypi.python.org/pypi/drf-writable-nested)
 
@@ -17,9 +17,9 @@ The following relations are supported:
 Requirements
 ============
 
-- Python (3.5, 3.6, 3.7, 3.8, 3.9, 3.10)
-- Django (2.2, 3.0, 3.1, 3.2, 4.0)
-- djangorestframework (3.8+)
+- Python (3.9, 3.10, 3.11, 3.12, 3.13)
+- Django (4.2, 5.0, 5.1, 5.2)
+- djangorestframework (3.14+)
 
 Installation
 ============
