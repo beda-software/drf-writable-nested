@@ -1073,3 +1073,41 @@ class WritableNestedModelSerializerAPITest(APITestCase):
         user = update_serializer.save()
         self.assertEqual(user.profile.avatars.count(), 3)
 
+class ChangingRelatedObjects(APITestCase):
+    def test_update_nont_linked_resource(self):
+        user1 = models.User.objects.create(username='user-1')
+        profile1 = models.Profile.objects.create(user=user1)
+        avatar1 = models.Avatar.objects.create(profile=profile1, image="user-1")
+
+        user2 = models.User.objects.create(username='user-2')
+        profile2 = models.Profile.objects.create(user=user2)
+        avatar2 = models.Avatar.objects.create(profile=profile2, image="user-2")
+
+        # Update avatar
+        user_pk = user1.pk
+        profile_pk = profile1.pk
+        user_data = {
+            'pk': user_pk,
+            'username': 'new',
+            'profile': {
+                'pk': profile_pk,
+                'avatars': [
+                    {
+                        'pk': avatar2.pk,
+                        'image': 'hacked',
+                    },
+                ],
+            },
+        }
+
+        update_serializer = serializers.UserSerializer(
+            data=user_data,
+            partial=True
+        )
+        update_serializer.is_valid(raise_exception=True)
+        user = update_serializer.save()
+
+        avatar2.refresh_from_db()
+
+        self.assertEqual(avatar2.profile.pk, profile2.pk)
+        self.assertEqual(avatar2.image, "user-2")
